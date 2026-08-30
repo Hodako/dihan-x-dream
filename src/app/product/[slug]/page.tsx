@@ -1,10 +1,9 @@
-import { INITIAL_PRODUCTS } from "@/lib/seedData";
 import ProductDetailClient from "./ProductDetailClient";
 
 export function generateStaticParams() {
-  return INITIAL_PRODUCTS.map((p) => ({
-    slug: p.slug,
-  }));
+  return [
+    { slug: "item" }
+  ];
 }
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {

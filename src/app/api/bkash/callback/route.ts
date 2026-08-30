@@ -10,6 +10,14 @@ export async function GET(req: NextRequest) {
 
   const baseUrl = req.nextUrl.origin || "http://localhost:3000";
 
+  // If user explicitly cancelled the gateway session
+  if (status === "cancel" || status === "cancelled") {
+    return NextResponse.redirect(
+      `${baseUrl}/payment/cancel?status=cancel&paymentID=${paymentID || ""}`
+    );
+  }
+
+  // If payment failed or paymentID is missing
   if (status !== "success" || !paymentID) {
     return NextResponse.redirect(
       `${baseUrl}/payment/failed?status=${status || "failed"}&paymentID=${paymentID || ""}`

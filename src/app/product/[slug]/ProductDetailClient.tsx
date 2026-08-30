@@ -31,9 +31,10 @@ interface ProductDetailClientProps {
 
 export default function ProductDetailClient({ slug }: ProductDetailClientProps) {
   const router = useRouter();
-  const [productData, setProductData] = useState<Product>(() => {
-    return INITIAL_PRODUCTS.find((p) => p.slug === slug) || INITIAL_PRODUCTS[0];
+  const [productData, setProductData] = useState<Product | null>(() => {
+    return INITIAL_PRODUCTS.find((p) => p.slug === slug) || null;
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadFirestoreProduct() {
@@ -46,19 +47,24 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
           const doc = snap.docs[0];
           setProductData({ id: doc.id, ...doc.data() } as Product);
         }
-      } catch (e) {}
+      } catch (e) {} finally {
+        setLoading(false);
+      }
     }
     loadFirestoreProduct();
   }, [slug]);
 
   const product = productData;
 
-  const [selectedColor, setSelectedColor] = useState<string>(
-    product?.variants?.[0]?.color || ""
-  );
-  const [selectedSize, setSelectedSize] = useState<string>(
-    product?.variants?.[0]?.size || ""
-  );
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
+
+  useEffect(() => {
+    if (product?.variants?.[0]) {
+      setSelectedColor(product.variants[0].color);
+      setSelectedSize(product.variants[0].size);
+    }
+  }, [product]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
@@ -74,7 +80,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   const [reviews, setReviews] = useState<Review[]>([
     {
       id: "rev-1",
-      productId: product.id,
+      productId: "sample",
       userId: "user-1",
       userName: "Farhana Ahmed",
       rating: 5,
@@ -85,7 +91,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
     },
     {
       id: "rev-2",
-      productId: product.id,
+      productId: "sample",
       userId: "user-2",
       userName: "Tanvir Hossain",
       rating: 5,
@@ -103,7 +109,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const { addToast } = useUIStore();
 
-  const isFavorite = isInWishlist(product.id);
+  const isFavorite = isInWishlist(product?.id || "");
 
   // Monitor scroll for mobile sticky buy bar
   useEffect(() => {
@@ -124,11 +130,15 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   // Filter variants by chosen color
   const colorVariants = useMemo(() => {
+    if (!product || !product.variants) return [];
     return product.variants.filter((v) => v.color === selectedColor);
   }, [product, selectedColor]);
 
   // Active selected variant
   const activeVariant: ProductVariant = useMemo(() => {
+    if (!product || !product.variants || product.variants.length === 0) {
+      return { color: "", colorHex: "", size: "", sku: "", stock: 0, images: [] };
+    }
     return (
       colorVariants.find((v) => v.size === selectedSize) ||
       colorVariants[0] ||
@@ -138,7 +148,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   // Gallery images for active color variant
   const galleryImages = useMemo(() => {
-    if (activeVariant.images && activeVariant.images.length > 0) {
+    if (activeVariant?.images && activeVariant.images.length > 0) {
       return activeVariant.images;
     }
     return [
@@ -151,6 +161,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   // Swatch unique colors
   const uniqueColors = useMemo(() => {
+    if (!product || !product.variants) return [];
     return product.variants.reduce((acc, curr) => {
       if (!acc.some((item) => item.color === curr.color)) {
         acc.push({ color: curr.color, colorHex: curr.colorHex });
@@ -161,7 +172,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   // Synchronize color selection when product changes
   useEffect(() => {
-    if (product?.variants?.length > 0) {
+    if (product?.variants && product.variants.length > 0) {
       setSelectedColor(product.variants[0].color);
       setSelectedSize(product.variants[0].size);
       setSelectedImageIndex(0);
@@ -170,13 +181,13 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    const firstSizeOfColor = product.variants.find((v) => v.color === color)?.size || "";
+    const firstSizeOfColor = product?.variants?.find((v) => v.color === color)?.size || "";
     setSelectedSize(firstSizeOfColor);
     setSelectedImageIndex(0);
   };
 
   const handleAddToCart = (openBagAfter = false) => {
-    if (!activeVariant || activeVariant.stock <= 0) return;
+    if (!product || !activeVariant || activeVariant.stock <= 0) return;
     setIsAdding(true);
 
     setTimeout(() => {
@@ -207,7 +218,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   };
 
   const handleBuyNow = () => {
-    if (!activeVariant || activeVariant.stock <= 0) return;
+    if (!product || !activeVariant || activeVariant.stock <= 0) return;
     setSingleItem({
       productId: product.id,
       variantSku: activeVariant.sku,
@@ -235,7 +246,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReview.name || !newReview.comment) return;
+    if (!product || !newReview.name || !newReview.comment) return;
 
     const reviewObj: Review = {
       id: `rev-${Date.now()}`,
@@ -255,8 +266,36 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
     addToast("Thank you for your review!", "success");
   };
 
+  if (loading && !product) {
+    return (
+      <div className="pt-36 pb-24 max-w-xl mx-auto px-4 text-center space-y-4 min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-2 border-ink-900 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-ink-500 font-mono">Loading product details...</p>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="pt-36 pb-24 max-w-xl mx-auto px-4 text-center space-y-4 min-h-[60vh] flex flex-col items-center justify-center">
+        <h1 className="font-heading text-2xl font-bold uppercase tracking-wider text-ink-900">
+          Product Not Found
+        </h1>
+        <p className="text-xs text-ink-500 max-w-sm">
+          This product is either unavailable or has been removed.
+        </p>
+        <Link
+          href="/shop"
+          className="px-6 py-2.5 bg-[#0E0E0E] text-white text-xs font-bold uppercase rounded-xl hover:bg-black transition-colors"
+        >
+          Browse All Products
+        </Link>
+      </div>
+    );
+  }
+
   const discountPercent = calculateDiscount(product.basePrice, product.salePrice);
-  const recommendations = INITIAL_PRODUCTS.filter((p) => p.id !== product.id);
+  const recommendations: Product[] = [];
 
   return (
     <div className="pt-[74px] sm:pt-[82px] pb-16 bg-white">

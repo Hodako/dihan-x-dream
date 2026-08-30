@@ -15,7 +15,7 @@ function ShopContent() {
   const sortParam = searchParams.get("sort");
   const searchParam = searchParams.get("q") || searchParams.get("search") || "";
 
-  const [productsList, setProductsList] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [productsList, setProductsList] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -35,8 +35,12 @@ function ShopContent() {
           const list: Product[] = [];
           snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as Product));
           setProductsList(list);
+        } else {
+          setProductsList([]);
         }
-      } catch (e) {}
+      } catch (e) {
+        setProductsList([]);
+      }
     }
     loadFirestoreProducts();
   }, []);

@@ -48,9 +48,11 @@ export default function HomePage() {
         if (!prodSnap.empty) {
           const loadedProds = prodSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
           setProducts(loadedProds);
+        } else {
+          setProducts([]);
         }
       } catch (err) {
-        console.log("Using initial fallback catalog data:", err);
+        setProducts([]);
       } finally {
         setLoading(false);
       }

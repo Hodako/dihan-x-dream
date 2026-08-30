@@ -1,21 +1,52 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { SlidersHorizontal, ArrowUpDown, ChevronDown } from "lucide-react";
-import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from "@/lib/seedData";
+import { SlidersHorizontal, ArrowUpDown, ChevronDown, ShoppingBag } from "lucide-react";
+import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import ProductCard from "@/components/storefront/ProductCard";
-import { Product } from "@/types";
+import { Product, Category } from "@/types";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface CategoryClientProps {
   slug: string;
 }
 
 export default function CategoryClient({ slug }: CategoryClientProps) {
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const catSnap = await getDoc(doc(db, "settings", "categories"));
+        if (catSnap.exists() && catSnap.data().categories) {
+          setCategories(catSnap.data().categories);
+        }
+
+        const prodSnap = await getDocs(collection(db, "products"));
+        if (!prodSnap.empty) {
+          const list: Product[] = [];
+          prodSnap.forEach((d) => list.push({ id: d.id, ...d.data() } as Product));
+          setAllProducts(list);
+        } else {
+          setAllProducts([]);
+        }
+      } catch (e) {
+        setAllProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const currentCategory = useMemo(() => {
     return (
-      INITIAL_CATEGORIES.find((c) => c.slug === slug) || {
+      categories.find((c) => c.slug === slug) || {
         id: slug,
         name: slug.replace("-", " ").toUpperCase(),
         slug: slug,
@@ -23,20 +54,14 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         order: 1,
       }
     );
-  }, [slug]);
+  }, [categories, slug]);
 
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "discount">("newest");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
 
   const categoryProducts = useMemo(() => {
-    let prods = INITIAL_PRODUCTS.filter(
-      (p) => p.category === slug || slug === "all" || p.tags.includes(slug)
+    let prods = allProducts.filter(
+      (p) => p.category === slug || slug === "all" || (p.tags && p.tags.includes(slug))
     );
-
-    // Fallback if small dataset
-    if (prods.length === 0) {
-      prods = INITIAL_PRODUCTS;
-    }
 
     if (sortBy === "price-asc") {
       return [...prods].sort((a, b) => (a.salePrice || a.basePrice) - (b.salePrice || b.basePrice));
@@ -48,7 +73,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
       return [...prods].sort((a, b) => (b.salePrice ? b.basePrice - b.salePrice : 0) - (a.salePrice ? a.basePrice - a.salePrice : 0));
     }
     return prods;
-  }, [slug, sortBy]);
+  }, [allProducts, slug, sortBy]);
 
   return (
     <div className="pt-[105px] sm:pt-[110px] lg:pt-[90px] pb-16 bg-white min-h-screen">
@@ -84,7 +109,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b border-line-200">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
             <span className="text-[11px] font-bold uppercase text-ink-500">Categories:</span>
-            {INITIAL_CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
@@ -118,11 +143,27 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         </div>
 
         {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
-          {categoryProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {categoryProducts.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
+            {categoryProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center space-y-3 bg-bg-subtle rounded-2xl border border-line-200">
+            <ShoppingBag className="w-8 h-8 text-ink-400 mx-auto" />
+            <h3 className="text-sm font-bold uppercase text-ink-800 tracking-wider">No Products Found</h3>
+            <p className="text-xs text-ink-500 max-w-sm mx-auto">
+              New styles will be added soon to this collection. Check back shortly or browse our full shop.
+            </p>
+            <Link
+              href="/shop"
+              className="inline-block px-5 py-2 bg-ink-900 text-white text-xs font-bold uppercase rounded-xl hover:bg-black transition-colors"
+            >
+              Browse All Products
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

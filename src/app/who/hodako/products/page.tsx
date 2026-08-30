@@ -27,7 +27,7 @@ import { db } from "@/lib/firebase";
 
 export default function AdminProductsPage() {
   const { addToast } = useUIStore();
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
@@ -75,11 +75,10 @@ export default function AdminProductsPage() {
           const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
           setProducts(loaded.filter((p) => !deletedIds.includes(p.id)));
         } else {
-          setProducts(INITIAL_PRODUCTS.filter((p) => !deletedIds.includes(p.id)));
+          setProducts([]);
         }
       } catch (e) {
-        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
-        setProducts(INITIAL_PRODUCTS.filter((p) => !deletedIds.includes(p.id)));
+        setProducts([]);
       }
     }
     loadProducts();
