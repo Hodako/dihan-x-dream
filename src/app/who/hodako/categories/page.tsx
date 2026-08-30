@@ -45,9 +45,20 @@ export default function AdminCategoriesPage() {
   const [order, setOrder] = useState(1);
   const [inHeader, setInHeader] = useState(true);
 
-  // Load from Firestore
+  // Load from Firestore & LocalStorage
   useEffect(() => {
     async function loadCategories() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_categories_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed.categories?.length > 0) setCategories(parsed.categories);
+            if (parsed.headerCategories?.length > 0) setHeaderCategories(parsed.headerCategories);
+          } catch (e) {}
+        }
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "categories"));
         if (snap.exists()) {
@@ -136,6 +147,13 @@ export default function AdminCategoriesPage() {
     setIsModalOpen(false);
 
     try {
+      localStorage.setItem("dream_categories_settings", JSON.stringify({
+        categories: updatedList,
+        headerCategories: updatedHeader,
+      }));
+    } catch (e) {}
+
+    try {
       await setDoc(doc(db, "settings", "categories"), {
         categories: updatedList,
         headerCategories: updatedHeader,
@@ -154,6 +172,13 @@ export default function AdminCategoriesPage() {
     const updatedHeader = headerCategories.filter((s) => s !== catSlug);
     setCategories(updatedList);
     setHeaderCategories(updatedHeader);
+
+    try {
+      localStorage.setItem("dream_categories_settings", JSON.stringify({
+        categories: updatedList,
+        headerCategories: updatedHeader,
+      }));
+    } catch (e) {}
 
     try {
       await setDoc(doc(db, "settings", "categories"), {
@@ -177,6 +202,13 @@ export default function AdminCategoriesPage() {
     setHeaderCategories(updated);
 
     try {
+      localStorage.setItem("dream_categories_settings", JSON.stringify({
+        categories,
+        headerCategories: updated,
+      }));
+    } catch (e) {}
+
+    try {
       await setDoc(doc(db, "settings", "categories"), {
         categories,
         headerCategories: updated,
@@ -197,6 +229,13 @@ export default function AdminCategoriesPage() {
     setHeaderCategories(updated);
 
     try {
+      localStorage.setItem("dream_categories_settings", JSON.stringify({
+        categories,
+        headerCategories: updated,
+      }));
+    } catch (e) {}
+
+    try {
       await setDoc(doc(db, "settings", "categories"), {
         categories,
         headerCategories: updated,
@@ -209,6 +248,12 @@ export default function AdminCategoriesPage() {
   const handleResetCategories = async () => {
     setCategories(INITIAL_CATEGORIES);
     setHeaderCategories(["casual-shirts", "polos", "men"]);
+    try {
+      localStorage.setItem("dream_categories_settings", JSON.stringify({
+        categories: INITIAL_CATEGORIES,
+        headerCategories: ["casual-shirts", "polos", "men"],
+      }));
+    } catch (e) {}
     try {
       await setDoc(doc(db, "settings", "categories"), {
         categories: INITIAL_CATEGORIES,

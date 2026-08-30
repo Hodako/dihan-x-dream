@@ -44,13 +44,24 @@ export default function HomePage() {
           setLookbookItems(lbSnap.data().items);
         }
 
-        const prodSnap = await getDocs(query(collection(db, "products"), limit(20)));
-        if (!prodSnap.empty) {
-          const loadedProds = prodSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
-          setProducts(loadedProds);
-        } else {
-          setProducts([]);
-        }
+        const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
+        const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
+        let allProds: Product[] = [...localCustom];
+
+        try {
+          const prodSnap = await getDocs(query(collection(db, "products"), limit(20)));
+          if (!prodSnap.empty) {
+            const loadedProds = prodSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
+            for (const p of loadedProds) {
+              if (!allProds.some((item) => item.id === p.id)) {
+                allProds.push(p);
+              }
+            }
+          }
+        } catch (e) {}
+
+        const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
+        setProducts(finalProds);
       } catch (err) {
         setProducts([]);
       } finally {

@@ -24,6 +24,7 @@ import { formatPrice, slugify } from "@/lib/utils";
 import { useUIStore } from "@/store/useUIStore";
 import { doc, getDocs, collection, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { sanitizeForFirestore } from "@/lib/firestoreUtils";
 
 export default function AdminProductsPage() {
   const { addToast } = useUIStore();
@@ -65,21 +66,30 @@ export default function AdminProductsPage() {
 
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
-  // Load from Firestore
+  // Load from Firestore and LocalStorage
   useEffect(() => {
     async function loadProducts() {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+      let allLoaded: Product[] = [...localCustom];
+
       try {
-        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
         const snap = await getDocs(collection(db, "products"));
         if (!snap.empty) {
-          const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
-          setProducts(loaded.filter((p) => !deletedIds.includes(p.id)));
-        } else {
-          setProducts([]);
+          const firestoreProds = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+          // Merge avoiding duplicates
+          for (const fp of firestoreProds) {
+            if (!allLoaded.some((p) => p.id === fp.id)) {
+              allLoaded.push(fp);
+            }
+          }
         }
       } catch (e) {
-        setProducts([]);
+        console.warn("Firestore product read fallback to local storage:", e);
       }
+
+      const activeList = allLoaded.filter((p) => !deletedIds.includes(p.id));
+      setProducts(activeList);
     }
     loadProducts();
   }, []);
@@ -195,20 +205,24 @@ export default function AdminProductsPage() {
       id: prodId,
       title: title.trim(),
       slug: prodSlug,
-      description: description || "Premium cotton shirt with tailored modern silhouette.",
-      brand: brand || "Dream Fashion",
+      description: description || "Premium cotton garment with tailored modern silhouette.",
+      brand: brand || "Dream Fashion Studio",
       category,
       tags: [category, isNew ? "new" : "", isTrending ? "trending" : ""].filter(Boolean),
-      basePrice: Number(basePrice),
-      salePrice: salePrice ? Number(salePrice) : undefined,
+      basePrice: Number(basePrice) || 0,
+      salePrice: salePrice ? Number(salePrice) : (null as any),
       variants: variants.map((v) => ({
-        ...v,
+        color: v.color || "Default",
+        colorHex: v.colorHex || "#111111",
+        size: v.size || "M",
+        sku: v.sku || `DF-${Date.now()}`,
+        stock: Number(v.stock) || 0,
         images: v.images.length > 0 ? v.images : uploadedImages.length > 0 ? uploadedImages : ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
       })),
-      fabricAndCare,
-      isNew,
-      isTrending,
-      isFeatured,
+      fabricAndCare: fabricAndCare || "100% Combed Cotton, Machine wash cold",
+      isNew: Boolean(isNew),
+      isTrending: Boolean(isTrending),
+      isFeatured: Boolean(isFeatured),
       status: "published",
       createdAt: editingProduct?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -226,15 +240,28 @@ export default function AdminProductsPage() {
     setProducts(updatedList);
     setIsModalOpen(false);
 
+    // 1. Always persist to localStorage for instant client rendering
     try {
-      await setDoc(doc(db, "products", prodId), newProduct);
+      localStorage.setItem("dream_custom_products", JSON.stringify(updatedList));
+      const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+      const filteredDeleted = deletedIds.filter((id) => id !== prodId);
+      localStorage.setItem("dream_deleted_products", JSON.stringify(filteredDeleted));
     } catch (e) {}
+
+    // 2. Persist sanitized document to Firestore
+    try {
+      const sanitized = sanitizeForFirestore(newProduct);
+      await setDoc(doc(db, "products", prodId), sanitized);
+    } catch (err: any) {
+      console.warn("Firestore setDoc warning (saved locally):", err);
+    }
   };
 
   const handleDeleteProduct = async (id: string, prodTitle: string) => {
     const updated = products.filter((p) => p.id !== id);
     setProducts(updated);
     try {
+      localStorage.setItem("dream_custom_products", JSON.stringify(updated));
       const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
       if (!deletedIds.includes(id)) {
         localStorage.setItem("dream_deleted_products", JSON.stringify([...deletedIds, id]));

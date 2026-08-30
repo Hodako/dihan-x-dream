@@ -21,6 +21,10 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
 
   useEffect(() => {
     async function loadData() {
+      const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
+      const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
+      let allProds: Product[] = [...localCustom];
+
       try {
         const catSnap = await getDoc(doc(db, "settings", "categories"));
         if (catSnap.exists() && catSnap.data().categories) {
@@ -29,15 +33,16 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
 
         const prodSnap = await getDocs(collection(db, "products"));
         if (!prodSnap.empty) {
-          const list: Product[] = [];
-          prodSnap.forEach((d) => list.push({ id: d.id, ...d.data() } as Product));
-          setAllProducts(list);
-        } else {
-          setAllProducts([]);
+          prodSnap.forEach((d) => {
+            const data = { id: d.id, ...d.data() } as Product;
+            if (!allProds.some((p) => p.id === data.id)) {
+              allProds.push(data);
+            }
+          });
         }
-      } catch (e) {
-        setAllProducts([]);
-      } finally {
+      } catch (e) {} finally {
+        const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
+        setAllProducts(finalProds);
         setLoading(false);
       }
     }

@@ -38,6 +38,15 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   useEffect(() => {
     async function loadFirestoreProduct() {
+      // First check local storage cache
+      if (typeof window !== "undefined") {
+        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        const foundLocal = localCustom.find((p) => p.slug === slug || p.id === slug);
+        if (foundLocal) {
+          setProductData(foundLocal);
+        }
+      }
+
       try {
         const { collection, getDocs, query, where } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");

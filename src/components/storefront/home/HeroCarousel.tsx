@@ -86,58 +86,36 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
           )}
         </div>
 
-        {/* Right Side Curated PC Grid Tiles (4 cols on PC, hidden on mobile) */}
+        {/* Right Side Curated PC Grid Tiles (4 cols on PC, clean photography, no overlay text/buttons) */}
         <div className="hidden lg:flex lg:col-span-4 flex-col gap-3.5 h-[460px]">
           {/* Card 1: Polos */}
           <Link
             href="/category/polos"
             className="relative flex-1 rounded-3xl overflow-hidden shadow-xs group bg-ink-900 block"
+            aria-label="Polo Collection"
           >
             <Image
               src="/images/banners/hero_2.jpg"
               alt="Polo Collection"
               fill
               sizes="400px"
-              className="object-cover object-center opacity-85 group-hover:scale-105 group-hover:opacity-95 transition-all duration-500"
+              className="object-cover object-center group-hover:scale-105 transition-all duration-700"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-gold">
-                TRENDING NOW
-              </span>
-              <h3 className="font-heading text-lg font-black uppercase text-white tracking-wide leading-tight mt-0.5">
-                CLASSIC & CONTRAST POLOS
-              </h3>
-              <div className="flex items-center gap-1 text-xs font-bold text-gray-200 mt-1 uppercase tracking-wider group-hover:text-white">
-                <span>Shop Polos</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
           </Link>
 
           {/* Card 2: Casual Shirts */}
           <Link
             href="/category/casual-shirts"
             className="relative flex-1 rounded-3xl overflow-hidden shadow-xs group bg-ink-900 block"
+            aria-label="Casual Shirts Collection"
           >
             <Image
               src="/images/banners/hero_1.jpg"
               alt="Casual Shirts Collection"
               fill
               sizes="400px"
-              className="object-cover object-top opacity-85 group-hover:scale-105 group-hover:opacity-95 transition-all duration-500"
+              className="object-cover object-top group-hover:scale-105 transition-all duration-700"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-gold">
-                NEW ARRIVALS
-              </span>
-              <h3 className="font-heading text-lg font-black uppercase text-white tracking-wide leading-tight mt-0.5">
-                PREMIUM CASUAL SHIRTS
-              </h3>
-              <div className="flex items-center gap-1 text-xs font-bold text-gray-200 mt-1 uppercase tracking-wider group-hover:text-white">
-                <span>Explore Shirts</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
           </Link>
         </div>
       </div>

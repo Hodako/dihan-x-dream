@@ -27,20 +27,26 @@ function ShopContent() {
 
   useEffect(() => {
     async function loadFirestoreProducts() {
+      const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
+      const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
+      let allProds: Product[] = [...localCustom];
+
       try {
         const { collection, getDocs, query, limit } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
         const snap = await getDocs(query(collection(db, "products"), limit(50)));
         if (!snap.empty) {
-          const list: Product[] = [];
-          snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as Product));
-          setProductsList(list);
-        } else {
-          setProductsList([]);
+          snap.forEach((doc) => {
+            const data = { id: doc.id, ...doc.data() } as Product;
+            if (!allProds.some((p) => p.id === data.id)) {
+              allProds.push(data);
+            }
+          });
         }
-      } catch (e) {
-        setProductsList([]);
-      }
+      } catch (e) {}
+
+      const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
+      setProductsList(finalProds);
     }
     loadFirestoreProducts();
   }, []);

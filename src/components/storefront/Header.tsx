@@ -46,6 +46,17 @@ export default function Header() {
 
   useEffect(() => {
     async function loadData() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_categories_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed.categories?.length > 0) setCategories(parsed.categories);
+            if (parsed.headerCategories?.length > 0) setHeaderCategorySlugs(parsed.headerCategories);
+          } catch (e) {}
+        }
+      }
+
       try {
         // Announcement
         const annSnap = await getDoc(doc(db, "settings", "announcement"));
