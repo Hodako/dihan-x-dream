@@ -13,6 +13,16 @@ import { AnnouncementSettings, Category } from "@/types";
 import { INITIAL_ANNOUNCEMENT, INITIAL_CATEGORIES } from "@/lib/seedData";
 import { cn } from "@/lib/utils";
 
+function getCategoryDisplayLabel(cat: Category): string {
+  if (cat.slug === "men") return "Men";
+  if (cat.slug === "casual-shirts") return "Shirt";
+  if (cat.slug === "polos") return "Polos";
+  if (cat.slug === "t-shirts") return "T-Shirt";
+  if (cat.slug === "pants") return "Pant";
+  const cleaned = cat.name.replace(/Collection/gi, "").replace(/Men'?s?/gi, "").trim();
+  return cleaned || cat.name;
+}
+
 export default function Header() {
   const pathname = usePathname();
   const { getTotalItems } = useCartStore();
@@ -153,8 +163,8 @@ export default function Header() {
 
             {/* Bottom Secondary Strip (Matching media_1788049780292.png) */}
             {!isCheckout && (
-              <div className="bg-[#EBEBEB] text-[#222222] px-4 sm:px-6 py-2 overflow-x-auto no-scrollbar border-t border-black/5">
-                <div className="flex items-center space-x-6 sm:space-x-8 text-xs sm:text-[13px] font-medium tracking-wide whitespace-nowrap">
+              <div className="bg-[#EBEBEB] text-[#222222] px-3.5 sm:px-6 py-1.5 sm:py-2 overflow-x-auto no-scrollbar border-t border-black/5">
+                <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-[13px] font-medium tracking-wide whitespace-nowrap">
                   <Link
                     href="/"
                     className={cn(
@@ -165,8 +175,10 @@ export default function Header() {
                     Home
                   </Link>
 
-                  {/* Top categories (e.g. Shirt, Polos, T-Shirt, Pant) */}
-                  {activeHeaderCategories.slice(0, 4).map((cat) => {
+                  {/* Top categories (e.g. Shirt, Polos, Men, etc.) */}
+                  {activeHeaderCategories.slice(0, 5).map((cat) => {
+                    const label = getCategoryDisplayLabel(cat);
+                    if (!label) return null;
                     const isActive = pathname === `/category/${cat.slug}`;
                     return (
                       <Link
@@ -177,7 +189,7 @@ export default function Header() {
                           isActive ? "font-bold text-black" : "text-gray-700"
                         )}
                       >
-                        {cat.name.replace("Collection", "").replace("Men's", "").trim()}
+                        {label}
                       </Link>
                     );
                   })}
@@ -191,7 +203,7 @@ export default function Header() {
                   >
                     Shop All
                   </Link>
-                </div>
+                </nav>
               </div>
             )}
           </div>
