@@ -91,7 +91,7 @@ export const INITIAL_CATEGORIES: Category[] = [
 export const INITIAL_BANNERS: BannerSlide[] = [
   {
     id: "banner-1",
-    imageUrl: "/images/banners/hero_1.jpg",
+    imageUrl: "/images/banners/hero_1.avif",
     headline: "SUMMER TAILORING & CASUAL SHIRTS",
     subtext: "Elevated casual shirts and premium polo edits crafted for modern Bangladesh.",
     ctaText: "",
@@ -101,7 +101,7 @@ export const INITIAL_BANNERS: BannerSlide[] = [
   },
   {
     id: "banner-2",
-    imageUrl: "/images/banners/hero_2.jpg",
+    imageUrl: "/images/banners/hero_2.avif",
     headline: "NEW ARRIVALS: CONTEMPORARY CLASSICS",
     subtext: "Sharp button-downs, textured polos, and fluid silhouettes designed for effortless elegance.",
     ctaText: "",

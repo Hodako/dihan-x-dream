@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Phone,
   Mail,
@@ -327,8 +328,20 @@ export default function Footer() {
         {/* Payment Methods */}
         {footer.showPaymentIcons && (
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <img src="/images/payments/only-bkash-icon.svg" alt="bKash" className="h-8 sm:h-9 w-auto object-contain" />
-            <img src="/images/payments/cod.png" alt="Cash on Delivery" className="h-10 w-auto object-contain" />
+            <Image
+              src="/images/payments/only-bkash-icon.svg"
+              alt="bKash"
+              width={48}
+              height={36}
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
+            <Image
+              src="/images/payments/cod.avif"
+              alt="Cash on Delivery"
+              width={120}
+              height={40}
+              className="h-10 w-auto object-contain"
+            />
           </div>
         )}
 

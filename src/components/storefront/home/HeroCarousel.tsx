@@ -95,7 +95,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
             aria-label="Polo Collection"
           >
             <Image
-              src="/images/banners/hero_2.jpg"
+              src="/images/banners/hero_2.avif"
               alt="Polo Collection"
               fill
               sizes="400px"
@@ -110,7 +110,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
             aria-label="Casual Shirts Collection"
           >
             <Image
-              src="/images/banners/hero_1.jpg"
+              src="/images/banners/hero_1.avif"
               alt="Casual Shirts Collection"
               fill
               sizes="400px"

@@ -142,7 +142,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         id: "all",
         name: "All Collections",
         slug: "all",
-        imageUrl: "/images/banners/hero_1.jpg",
+        imageUrl: "/images/banners/hero_1.avif",
         order: 0,
       };
     }
@@ -152,7 +152,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         id: slug,
         name: slug.replace(/-/g, " ").toUpperCase(),
         slug: slug,
-        imageUrl: "/images/banners/hero_1.jpg",
+        imageUrl: "/images/banners/hero_1.avif",
         order: 1,
       }
     );
