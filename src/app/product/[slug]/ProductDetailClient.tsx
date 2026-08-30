@@ -36,32 +36,56 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
       const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
       const foundLocal = localCustom.find((p) => p.slug === slug || p.id === slug);
       if (foundLocal) return foundLocal;
+      const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+      const foundCached = allCached.find((p) => p.slug === slug || p.id === slug);
+      if (foundCached) return foundCached;
     }
-    return INITIAL_PRODUCTS.find((p) => p.slug === slug) || null;
+    return INITIAL_PRODUCTS.find((p) => p.slug === slug || p.id === slug) || null;
   });
-  const [loading, setLoading] = useState(false);
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+      if (localCustom.some((p) => p.slug === slug || p.id === slug)) return false;
+      const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+      if (allCached.some((p) => p.slug === slug || p.id === slug)) return false;
+    }
+    return !INITIAL_PRODUCTS.some((p) => p.slug === slug || p.id === slug);
+  });
 
   useEffect(() => {
     async function loadFirestoreProduct() {
-      // First check local storage cache
+      // 1. First check local storage cache
       if (typeof window !== "undefined") {
         const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
         const foundLocal = localCustom.find((p) => p.slug === slug || p.id === slug);
         if (foundLocal) {
           setProductData(foundLocal);
+          setLoading(false);
+          return;
         }
       }
 
       try {
-        const { collection, getDocs, query, where } = await import("firebase/firestore");
+        const { collection, getDocs, query, where, doc, getDoc } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
+
+        // 2. Query Firestore by slug
         const q = query(collection(db, "products"), where("slug", "==", slug));
         const snap = await getDocs(q);
         if (!snap.empty) {
-          const doc = snap.docs[0];
-          setProductData({ id: doc.id, ...doc.data() } as Product);
+          const d = snap.docs[0];
+          setProductData({ id: d.id, ...d.data() } as Product);
+        } else {
+          // 3. Fallback to direct document id lookup
+          const docRef = await getDoc(doc(db, "products", slug));
+          if (docRef.exists()) {
+            setProductData({ id: docRef.id, ...docRef.data() } as Product);
+          }
         }
-      } catch (e) {} finally {
+      } catch (e) {
+        console.error("Firestore product load error:", e);
+      } finally {
         setLoading(false);
       }
     }
@@ -282,9 +306,44 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   if (loading && !product) {
     return (
-      <div className="pt-36 pb-24 max-w-xl mx-auto px-4 text-center space-y-4 min-h-[60vh] flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-2 border-ink-900 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-ink-500 font-mono">Loading product details...</p>
+      <div className="pt-[74px] sm:pt-[82px] pb-16 bg-white min-h-[80vh]">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
+          {/* Breadcrumb skeleton */}
+          <div className="h-3.5 w-44 bg-line-200 rounded-sm animate-pulse mb-4" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-start">
+            {/* Gallery Skeleton */}
+            <div className="lg:col-span-7 space-y-3">
+              <div className="aspect-3/4 w-full bg-gradient-to-r from-line-100 via-line-200 to-line-100 rounded-2xl animate-pulse" />
+              <div className="flex gap-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="w-16 h-20 bg-line-100 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            </div>
+
+            {/* Product Info Skeleton */}
+            <div className="lg:col-span-5 space-y-4 pt-2">
+              <div className="h-3.5 w-24 bg-line-200 rounded animate-pulse" />
+              <div className="h-7 w-5/6 bg-line-200 rounded-md animate-pulse" />
+              <div className="h-6 w-32 bg-line-200 rounded animate-pulse" />
+              
+              <div className="pt-4 space-y-2">
+                <div className="h-3.5 w-20 bg-line-200 rounded animate-pulse" />
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-12 h-9 bg-line-100 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-3">
+                <div className="h-12 w-full bg-line-200 rounded-xl animate-pulse" />
+                <div className="h-12 w-full bg-line-100 rounded-xl animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
