@@ -559,17 +559,41 @@ export default function CheckoutPage() {
 
   if (isRedirecting) {
     return (
-      <div className="pt-32 pb-24 min-h-[65vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-white shadow-lg border border-pink-100 flex items-center justify-center p-3 mb-5 animate-pulse">
-          <Image src="/only-bkash-icon.svg" alt="bKash" width={44} height={44} className="object-contain" />
+      <div className="pt-32 pb-24 min-h-[70vh] flex flex-col items-center justify-center text-center px-4 bg-[#FAFAFA]">
+        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-line-200 shadow-xl max-w-md w-full flex flex-col items-center space-y-6">
+          <div className="w-full h-16 flex items-center justify-center p-2">
+            <Image
+              src="/images/payments/bkash.svg"
+              alt="bKash"
+              width={180}
+              height={55}
+              priority
+              className="object-contain max-h-12 w-auto"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#DF146E] animate-ping" />
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#DF146E]">
+                Official Gateway
+              </span>
+            </div>
+            <h2 className="font-heading text-lg sm:text-xl font-bold uppercase tracking-wider text-ink-900">
+              Redirecting to bKash Payment Portal...
+            </h2>
+            <p className="text-xs text-ink-500 max-w-xs mx-auto leading-relaxed">
+              Please wait while we safely open the official bKash secure payment gateway.
+            </p>
+          </div>
+
+          <div className="w-full bg-pink-50/70 border border-pink-100 rounded-2xl p-4 flex items-center justify-center gap-3">
+            <span className="df-spinner df-spinner--dark df-spinner--sm" />
+            <span className="text-xs font-semibold text-pink-900 font-mono">
+              Securing 256-Bit Encrypted Session
+            </span>
+          </div>
         </div>
-        <div className="df-spinner df-spinner--dark df-spinner--lg mb-4" />
-        <h2 className="font-heading text-lg sm:text-xl font-bold uppercase tracking-wider text-ink-900">
-          Redirecting to bKash Payment Portal...
-        </h2>
-        <p className="text-xs text-ink-500 mt-2 max-w-sm">
-          Please wait while we safely open the official bKash secure payment gateway.
-        </p>
       </div>
     );
   }

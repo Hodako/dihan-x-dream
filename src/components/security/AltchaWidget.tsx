@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { ShieldCheck, Lock, RefreshCw, CheckCircle2 } from "lucide-react";
@@ -87,6 +87,10 @@ export default function AltchaWidget({
     }
   }, [autoVerify, solveChallenge, status]);
 
+  if (status === "verified" || (autoVerify && (status === "idle" || status === "verifying"))) {
+    return null;
+  }
+
   return (
     <div
       className={`p-3 bg-bg-subtle/80 border border-line-200 rounded-xl text-xs flex items-center justify-between gap-3 ${className}`}
@@ -94,18 +98,12 @@ export default function AltchaWidget({
       <div className="flex items-center gap-2.5 min-w-0">
         <div
           className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-            status === "verified"
-              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-              : status === "verifying"
-              ? "bg-amber-50 text-amber-600 border border-amber-200 animate-pulse"
-              : status === "error"
+            status === "error"
               ? "bg-red-50 text-red-600 border border-red-200"
               : "bg-line-200 text-ink-700"
           }`}
         >
-          {status === "verified" ? (
-            <CheckCircle2 className="w-4 h-4" />
-          ) : status === "verifying" ? (
+          {status === "verifying" ? (
             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
           ) : (
             <ShieldCheck className="w-4 h-4" />
@@ -115,35 +113,27 @@ export default function AltchaWidget({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-ink-900">
             <span>
-              {status === "verified"
-                ? "DDoS & Bot Shield Active"
-                : status === "verifying"
-                ? "Validating Security PoW..."
-                : status === "error"
+              {status === "error"
                 ? "Security Check Failed"
-                : "ALTCHA Anti-DDoS Protection"}
+                : "Security Verification"}
             </span>
           </div>
           <p className="text-[10px] text-ink-500 truncate">
-            {status === "verified"
-              ? "Cryptographically verified via ALTCHA Proof-of-Work"
-              : status === "error"
+            {status === "error"
               ? errorMessage
-              : "Zero-tracking privacy-first bot mitigation"}
+              : "Validating secure session..."}
           </p>
         </div>
       </div>
 
-      {status !== "verified" && (
-        <button
-          type="button"
-          onClick={solveChallenge}
-          disabled={status === "verifying"}
-          className="px-2.5 py-1 bg-white hover:bg-line-100 text-ink-900 border border-line-200 rounded-lg text-[10px] font-bold uppercase transition-all shrink-0 cursor-pointer disabled:opacity-50"
-        >
-          {status === "verifying" ? "Checking..." : "Verify"}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={solveChallenge}
+        disabled={status === "verifying"}
+        className="px-2.5 py-1 bg-white hover:bg-line-100 text-ink-900 border border-line-200 rounded-lg text-[10px] font-bold uppercase transition-all shrink-0 cursor-pointer disabled:opacity-50"
+      >
+        {status === "verifying" ? "Checking..." : "Retry"}
+      </button>
     </div>
   );
 }

@@ -151,6 +151,8 @@ export default function AdminCategoriesPage() {
         categories: updatedList,
         headerCategories: updatedHeader,
       }));
+      window.dispatchEvent(new Event("dream_categories_changed"));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {
@@ -178,6 +180,8 @@ export default function AdminCategoriesPage() {
         categories: updatedList,
         headerCategories: updatedHeader,
       }));
+      window.dispatchEvent(new Event("dream_categories_changed"));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {
@@ -206,6 +210,8 @@ export default function AdminCategoriesPage() {
         categories,
         headerCategories: updated,
       }));
+      window.dispatchEvent(new Event("dream_categories_changed"));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {
@@ -233,6 +239,8 @@ export default function AdminCategoriesPage() {
         categories,
         headerCategories: updated,
       }));
+      window.dispatchEvent(new Event("dream_categories_changed"));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {

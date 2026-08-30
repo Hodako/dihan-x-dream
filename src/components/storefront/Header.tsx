@@ -1,25 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, ShoppingCart, Menu, X, User } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useUIStore } from "@/store/useUIStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { AnnouncementSettings, Category } from "@/types";
 import { INITIAL_ANNOUNCEMENT, INITIAL_CATEGORIES } from "@/lib/seedData";
 import { cn } from "@/lib/utils";
 
 function getCategoryDisplayLabel(cat: Category): string {
-  if (cat.slug === "men") return "Men";
-  if (cat.slug === "casual-shirts") return "Shirt";
-  if (cat.slug === "polos") return "Polos";
-  if (cat.slug === "t-shirts") return "T-Shirt";
-  if (cat.slug === "pants") return "Pant";
-  const cleaned = cat.name.replace(/Collection/gi, "").replace(/Men'?s?/gi, "").trim();
+  if (!cat || !cat.name) return "";
+  const cleaned = cat.name.replace(/\bCollections?\b/gi, "").trim();
   return cleaned || cat.name;
 }
 
@@ -45,41 +41,84 @@ export default function Header() {
   const totalCartCount = mounted ? getTotalItems() : 0;
 
   useEffect(() => {
-    async function loadData() {
+    // 1. Instant sync from local cache
+    const syncLocal = () => {
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem("dream_categories_settings");
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            if (parsed.categories?.length > 0) setCategories(parsed.categories);
-            if (parsed.headerCategories?.length > 0) setHeaderCategorySlugs(parsed.headerCategories);
+            if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+              setCategories(parsed.categories);
+            }
+            if (Array.isArray(parsed.headerCategories) && parsed.headerCategories.length > 0) {
+              setHeaderCategorySlugs(parsed.headerCategories);
+            }
           } catch (e) {}
         }
       }
+    };
+    syncLocal();
 
-      try {
-        // Announcement
-        const annSnap = await getDoc(doc(db, "settings", "announcement"));
-        if (annSnap.exists()) {
-          setAnnouncement(annSnap.data() as AnnouncementSettings);
-        }
+    window.addEventListener("storage", syncLocal);
+    window.addEventListener("dream_categories_changed", syncLocal);
 
-        // Header Categories
-        const catSnap = await getDoc(doc(db, "settings", "categories"));
-        if (catSnap.exists()) {
-          const data = catSnap.data();
-          if (data.categories && data.categories.length > 0) setCategories(data.categories);
-          if (data.headerCategories) setHeaderCategorySlugs(data.headerCategories);
+    // 2. Real-time Live Firestore Subscriptions
+    const unsubCats = onSnapshot(
+      doc(db, "settings", "categories"),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data.categories) && data.categories.length > 0) {
+            setCategories(data.categories);
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(
+                  "dream_categories_settings",
+                  JSON.stringify({
+                    categories: data.categories,
+                    headerCategories: data.headerCategories || [],
+                  })
+                );
+              } catch (e) {}
+            }
+          }
+          if (Array.isArray(data.headerCategories) && data.headerCategories.length > 0) {
+            setHeaderCategorySlugs(data.headerCategories);
+          }
         }
-      } catch (e) {}
-    }
-    loadData();
+      },
+      () => {}
+    );
+
+    const unsubAnn = onSnapshot(
+      doc(db, "settings", "announcement"),
+      (snap) => {
+        if (snap.exists()) {
+          setAnnouncement(snap.data() as AnnouncementSettings);
+        }
+      },
+      () => {}
+    );
+
+    return () => {
+      window.removeEventListener("storage", syncLocal);
+      window.removeEventListener("dream_categories_changed", syncLocal);
+      unsubCats();
+      unsubAnn();
+    };
   }, []);
 
   // Map and sort top nav categories according to the exact sequence in headerCategorySlugs
-  const activeHeaderCategories = headerCategorySlugs
-    .map((slug) => categories.find((c) => c.slug === slug))
-    .filter((c): c is Category => Boolean(c));
+  const activeHeaderCategories = useMemo(() => {
+    if (headerCategorySlugs && headerCategorySlugs.length > 0) {
+      const mapped = headerCategorySlugs
+        .map((slug) => categories.find((c) => c.slug === slug || c.id === slug))
+        .filter((c): c is Category => Boolean(c));
+      if (mapped.length > 0) return mapped;
+    }
+    return [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [headerCategorySlugs, categories]);
 
   const isCheckout = pathname?.startsWith("/checkout") || pathname?.startsWith("/order-confirmation");
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/who/hodako")) return null;
@@ -186,14 +225,14 @@ export default function Header() {
                     Home
                   </Link>
 
-                  {/* Top categories (e.g. Shirt, Polos, Men, etc.) */}
-                  {activeHeaderCategories.slice(0, 5).map((cat) => {
+                  {/* Top categories set from Admin Panel */}
+                  {activeHeaderCategories.map((cat) => {
                     const label = getCategoryDisplayLabel(cat);
                     if (!label) return null;
                     const isActive = pathname === `/category/${cat.slug}`;
                     return (
                       <Link
-                        key={cat.id}
+                        key={cat.id || cat.slug}
                         href={`/category/${cat.slug}`}
                         className={cn(
                           "transition-colors hover:text-black uppercase text-[11px] sm:text-xs",

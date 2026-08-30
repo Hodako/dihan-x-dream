@@ -212,6 +212,8 @@ export default function AdminSettingsPage() {
         headerCategories: ["casual-shirts", "polos", "men"],
         updatedAt: new Date().toISOString(),
       });
+      window.dispatchEvent(new Event("dream_categories_changed"));
+      window.dispatchEvent(new Event("storage"));
       setResetCategoriesConfirm("");
       addToast("Taxonomy and top header categories restored to defaults.", "success");
     } catch (e: any) {
