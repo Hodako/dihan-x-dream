@@ -285,6 +285,8 @@ export interface FooterSettings {
   tiktokUrl: string;
   youtubeUrl: string;
   linkedinUrl: string;
+  twitterUrl?: string;
+  pinterestUrl?: string;
   copyrightText: string;
   creatorName: string;
   creatorUrl: string;

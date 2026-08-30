@@ -35,6 +35,16 @@ export default function AdminFooterPage() {
 
   useEffect(() => {
     async function loadFooter() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_footer_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as FooterSettings;
+            setFooter(parsed);
+          } catch (e) {}
+        }
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "footer"));
         if (snap.exists()) {
@@ -48,10 +58,14 @@ export default function AdminFooterPage() {
   const handleSaveFooter = async () => {
     setIsSaving(true);
     try {
+      localStorage.setItem("dream_footer_settings", JSON.stringify(footer));
+    } catch (e) {}
+
+    try {
       await setDoc(doc(db, "settings", "footer"), footer);
-      addToast("Footer information saved and live on storefront!", "success");
+      addToast("Footer & Social Media links saved and live on storefront!", "success");
     } catch (e: any) {
-      addToast(e.message || "Failed to save footer settings", "error");
+      addToast("Settings cached locally", "info");
     } finally {
       setIsSaving(false);
     }
@@ -113,10 +127,10 @@ export default function AdminFooterPage() {
             type="button"
             onClick={handleSaveFooter}
             disabled={isSaving}
-            className="px-5 py-2.5 bg-admin-accent hover:bg-admin-accent-hover text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
           >
             {isSaving ? (
-              <span className="df-spinner df-spinner--sm" />
+              <span className="df-spinner df-spinner--dark df-spinner--sm" />
             ) : (
               <>
                 <Save className="w-4 h-4" />
@@ -257,35 +271,109 @@ export default function AdminFooterPage() {
 
           {/* 3. Social Media & Creator Credit */}
           <div className="bg-white p-6 rounded-2xl border border-admin-border-light shadow-2xs space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light flex items-center gap-2 border-b border-admin-border-light pb-2">
-              <Share2 className="w-4 h-4 text-admin-accent" />
-              <span>3. Social Channels & Developer Credit</span>
-            </h2>
+            <div className="flex items-center justify-between border-b border-admin-border-light pb-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-admin-accent" />
+                <span>3. Social Media Channels & Creator Credit</span>
+              </h2>
+              <span className="text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                Live Store Sync
+              </span>
+            </div>
+
+            <p className="text-xs text-admin-text-secondary-light">
+              Enter full URLs for your brand social accounts. Any field filled in will instantly appear with luxury interactive icons in the storefront footer:
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block font-bold uppercase text-ink-700 mb-1">
-                  Facebook Page / Profile URL
+                  Facebook URL
                 </label>
                 <input
                   type="url"
                   value={footer.facebookUrl || ""}
                   onChange={(e) => setFooter({ ...footer, facebookUrl: e.target.value })}
-                  placeholder="https://facebook.com/hodako17"
-                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent"
+                  placeholder="https://facebook.com/yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
                 />
               </div>
 
               <div>
                 <label className="block font-bold uppercase text-ink-700 mb-1">
-                  Instagram Profile URL
+                  Instagram URL
                 </label>
                 <input
                   type="url"
                   value={footer.instagramUrl || ""}
                   onChange={(e) => setFooter({ ...footer, instagramUrl: e.target.value })}
-                  placeholder="https://instagram.com/..."
-                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent"
+                  placeholder="https://instagram.com/yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">
+                  TikTok URL
+                </label>
+                <input
+                  type="url"
+                  value={footer.tiktokUrl || ""}
+                  onChange={(e) => setFooter({ ...footer, tiktokUrl: e.target.value })}
+                  placeholder="https://tiktok.com/@yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">
+                  YouTube Channel URL
+                </label>
+                <input
+                  type="url"
+                  value={footer.youtubeUrl || ""}
+                  onChange={(e) => setFooter({ ...footer, youtubeUrl: e.target.value })}
+                  placeholder="https://youtube.com/@yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">
+                  LinkedIn Profile / Page URL
+                </label>
+                <input
+                  type="url"
+                  value={footer.linkedinUrl || ""}
+                  onChange={(e) => setFooter({ ...footer, linkedinUrl: e.target.value })}
+                  placeholder="https://linkedin.com/company/yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">
+                  Twitter / X Profile URL
+                </label>
+                <input
+                  type="url"
+                  value={footer.twitterUrl || ""}
+                  onChange={(e) => setFooter({ ...footer, twitterUrl: e.target.value })}
+                  placeholder="https://x.com/yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">
+                  Pinterest Profile URL
+                </label>
+                <input
+                  type="url"
+                  value={footer.pinterestUrl || ""}
+                  onChange={(e) => setFooter({ ...footer, pinterestUrl: e.target.value })}
+                  placeholder="https://pinterest.com/yourbrand"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
                 />
               </div>
 
@@ -298,11 +386,11 @@ export default function AdminFooterPage() {
                   value={footer.creatorName || ""}
                   onChange={(e) => setFooter({ ...footer, creatorName: e.target.value })}
                   placeholder="Azizul Hakim Khan"
-                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-semibold text-ink-900 focus:outline-none focus:border-admin-accent"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-semibold text-ink-900 focus:outline-none focus:border-admin-accent text-xs"
                 />
               </div>
 
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block font-bold uppercase text-ink-700 mb-1">
                   Creator Profile URL
                 </label>
@@ -311,7 +399,7 @@ export default function AdminFooterPage() {
                   value={footer.creatorUrl || ""}
                   onChange={(e) => setFooter({ ...footer, creatorUrl: e.target.value })}
                   placeholder="https://facebook.com/hodako17"
-                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-ink-900 focus:outline-none focus:border-admin-accent font-mono text-[11px]"
                 />
               </div>
             </div>

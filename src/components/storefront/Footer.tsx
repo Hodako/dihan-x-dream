@@ -51,6 +51,30 @@ function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function TiktokIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+    </svg>
+  );
+}
+
+function TwitterIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" {...props}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  );
+}
+
+function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+      <path d="M12 0c-6.627 0-12 5.372-12 12 0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 12-5.373 12-12 0-6.628-5.393-12-12-12z"/>
+    </svg>
+  );
+}
+
 export default function Footer() {
   const { addToast } = useUIStore();
   const [footer, setFooter] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
@@ -59,6 +83,16 @@ export default function Footer() {
 
   useEffect(() => {
     async function loadFooter() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_footer_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as FooterSettings;
+            setFooter(parsed);
+          } catch (e) {}
+        }
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "footer"));
         if (snap.exists()) {
@@ -93,13 +127,13 @@ export default function Footer() {
             </p>
 
             {/* Social Icons Strip */}
-            <div className="flex items-center justify-center lg:justify-start gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-2">
               {footer.facebookUrl && (
                 <a
                   href={footer.facebookUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#1877F2] text-white flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#1877F2] text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                   aria-label="Facebook"
                 >
                   <FacebookIcon />
@@ -110,10 +144,21 @@ export default function Footer() {
                   href={footer.instagramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#E4405F] text-white flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#E4405F] text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                   aria-label="Instagram"
                 >
                   <InstagramIcon />
+                </a>
+              )}
+              {footer.tiktokUrl && (
+                <a
+                  href={footer.tiktokUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-black text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm border border-white/20"
+                  aria-label="TikTok"
+                >
+                  <TiktokIcon />
                 </a>
               )}
               {footer.youtubeUrl && (
@@ -121,7 +166,7 @@ export default function Footer() {
                   href={footer.youtubeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#CD201F] text-white flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#CD201F] text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                   aria-label="YouTube"
                 >
                   <YoutubeIcon />
@@ -132,7 +177,7 @@ export default function Footer() {
                   href={`https://wa.me/${footer.whatsapp.replace(/[^0-9]/g, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#25D366] text-white flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#25D366] text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                   aria-label="WhatsApp"
                 >
                   <MessageCircle className="w-4 h-4" />
@@ -143,10 +188,32 @@ export default function Footer() {
                   href={footer.linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0A66C2] text-white flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0A66C2] text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                   aria-label="LinkedIn"
                 >
                   <LinkedinIcon />
+                </a>
+              )}
+              {footer.twitterUrl && (
+                <a
+                  href={footer.twitterUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-black text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm border border-white/20"
+                  aria-label="Twitter / X"
+                >
+                  <TwitterIcon />
+                </a>
+              )}
+              {footer.pinterestUrl && (
+                <a
+                  href={footer.pinterestUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#BD081C] text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
+                  aria-label="Pinterest"
+                >
+                  <PinterestIcon />
                 </a>
               )}
             </div>

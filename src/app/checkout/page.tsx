@@ -22,6 +22,7 @@ import {
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUIStore } from "@/store/useUIStore";
+import AltchaWidget from "@/components/security/AltchaWidget";
 import {
   BdDivision,
   BdDistrict,
@@ -1135,18 +1136,21 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Security PoW Anti-DDoS Verification */}
+              <AltchaWidget autoVerify={true} />
+
               {/* Action Buttons */}
               <div className="pt-2 space-y-2">
                 <button
                   type="button"
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
-                  className="w-full py-3.5 bg-[#0E0E0E] hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] cursor-pointer"
+                  className="w-full py-3.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
-                      <span className="df-spinner df-spinner--sm" />
-                      <span>Processing...</span>
+                      <span className="df-spinner df-spinner--dark df-spinner--sm" />
+                      <span>Processing Order...</span>
                     </div>
                   ) : (
                     <span>Confirm Order</span>
