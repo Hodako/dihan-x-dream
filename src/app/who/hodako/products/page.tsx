@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   Plus,
@@ -16,6 +16,8 @@ import {
   RefreshCw,
   Eye,
   Sliders,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Product, ProductVariant } from "@/types";
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from "@/lib/seedData";
@@ -296,21 +298,36 @@ export default function AdminProductsPage() {
     addToast("Catalog reset with default high-quality apparel items.", "success");
   };
 
-  // Filtering
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = categoryFilter === "all" || p.category === categoryFilter;
-    const matchesSection =
-      sectionFilter === "all" ||
-      (sectionFilter === "featured" && p.isFeatured) ||
-      (sectionFilter === "new" && p.isNew) ||
-      (sectionFilter === "trending" && p.isTrending);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
-    return matchesSearch && matchesCat && matchesSection;
-  });
+  // Filtering
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesSearch =
+        p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCat = categoryFilter === "all" || p.category === categoryFilter;
+      const matchesSection =
+        sectionFilter === "all" ||
+        (sectionFilter === "featured" && p.isFeatured) ||
+        (sectionFilter === "new" && p.isNew) ||
+        (sectionFilter === "trending" && p.isTrending);
+
+      return matchesSearch && matchesCat && matchesSection;
+    });
+  }, [products, searchTerm, categoryFilter, sectionFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, sectionFilter]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   return (
     <div className="space-y-6">
@@ -400,7 +417,7 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line-100 text-admin-text-primary-light">
-              {filteredProducts.map((prod) => {
+              {paginatedProducts.map((prod) => {
                 const totalStock = prod.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
                 const primaryImg = prod.variants?.[0]?.images?.[0] || "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800";
 
@@ -465,14 +482,14 @@ export default function AdminProductsPage() {
                     <td className="p-4 text-right space-x-2">
                       <button
                         onClick={() => handleOpenEditModal(prod)}
-                        className="p-1.5 hover:bg-admin-accent-soft text-admin-accent rounded transition-colors"
+                        className="p-1.5 hover:bg-admin-accent-soft text-admin-accent rounded transition-colors cursor-pointer"
                         title="Edit Product"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(prod.id, prod.title)}
-                        className="p-1.5 hover:bg-accent-red/10 text-accent-red rounded transition-colors"
+                        className="p-1.5 hover:bg-accent-red/10 text-accent-red rounded transition-colors cursor-pointer"
                         title="Delete Product"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -492,6 +509,53 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Table Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-admin-border-light flex items-center justify-between bg-bg-subtle/50 text-xs">
+            <span className="text-admin-text-secondary-light font-mono">
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+              {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} Products
+            </span>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-admin-border-light bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Previous Page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    currentPage === pageNum
+                      ? "bg-[#FFB900] text-black font-black"
+                      : "bg-white border border-admin-border-light hover:bg-line-200 text-ink-800"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-lg border border-admin-border-light bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Next Page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* CREATE / EDIT PRODUCT MODAL */}

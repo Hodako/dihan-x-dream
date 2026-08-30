@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Tag, Plus, Trash2, Check, AlertCircle, RefreshCw } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Tag, Plus, Trash2, Check, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { Coupon } from "@/types";
 import { INITIAL_COUPONS } from "@/lib/seedData";
 import { formatPrice } from "@/lib/utils";
@@ -9,13 +9,16 @@ import { useUIStore } from "@/store/useUIStore";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+const ITEMS_PER_PAGE = 8;
+
 export default function AdminCouponsPage() {
   const { addToast } = useUIStore();
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [isAdding, setIsAdding] = useState(false);
   const [code, setCode] = useState("");
-  const [type, setType] = useState<"fixed" | "percent">("percent");
+  const [type, setType] = useState<"percent" | "fixed">("percent");
   const [value, setValue] = useState(10);
   const [minOrder, setMinOrder] = useState(1500);
   const [usageLimit, setUsageLimit] = useState(500);
@@ -79,6 +82,12 @@ export default function AdminCouponsPage() {
     } catch (e) {}
   };
 
+  const totalPages = Math.ceil(coupons.length / ITEMS_PER_PAGE) || 1;
+  const paginatedCoupons = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return coupons.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [coupons, currentPage]);
+
   return (
     <div className="space-y-8 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -93,7 +102,7 @@ export default function AdminCouponsPage() {
 
         <button
           onClick={() => setIsAdding(true)}
-          className="px-5 py-3 bg-admin-accent hover:bg-admin-accent-hover text-white text-xs font-bold uppercase tracking-wider rounded flex items-center gap-2 transition-colors shadow-xs"
+          className="px-5 py-3 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create New Coupon</span>
@@ -101,11 +110,11 @@ export default function AdminCouponsPage() {
       </div>
 
       {/* Coupons Table */}
-      <div className="bg-white rounded-lg border border-admin-border-light shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-admin-border-light shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="bg-bg-subtle border-b border-line-200 text-admin-text-secondary-light font-semibold uppercase">
+              <tr className="bg-bg-subtle border-b border-line-200 text-admin-text-secondary-light font-bold uppercase text-[10px]">
                 <th className="p-4">Coupon Code</th>
                 <th className="p-4">Discount Value</th>
                 <th className="p-4">Min Spend Requirement</th>
@@ -115,7 +124,7 @@ export default function AdminCouponsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line-100 text-admin-text-primary-light">
-              {coupons.map((cpn) => (
+              {paginatedCoupons.map((cpn) => (
                 <tr key={cpn.id} className="hover:bg-bg-subtle/50 transition-colors">
                   <td className="p-4 font-mono font-bold text-admin-accent">{cpn.code}</td>
                   <td className="p-4 font-bold">
@@ -127,10 +136,11 @@ export default function AdminCouponsPage() {
                   </td>
                   <td className="p-4">
                     <button
+                      type="button"
                       onClick={() => handleToggleActive(cpn.id)}
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer ${
                         cpn.active
-                          ? "bg-admin-success/15 text-admin-success"
+                          ? "bg-df-success-soft text-df-success"
                           : "bg-line-200 text-admin-text-secondary"
                       }`}
                     >
@@ -139,8 +149,9 @@ export default function AdminCouponsPage() {
                   </td>
                   <td className="p-4 text-right">
                     <button
+                      type="button"
                       onClick={() => handleDeleteCoupon(cpn.id)}
-                      className="p-1 text-admin-text-secondary hover:text-admin-danger"
+                      className="p-1.5 text-admin-text-secondary hover:text-admin-danger rounded transition-colors cursor-pointer"
                       aria-label="Delete coupon"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -148,9 +159,62 @@ export default function AdminCouponsPage() {
                   </td>
                 </tr>
               ))}
+              {coupons.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-ink-500">
+                    No active discount coupons configured.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-admin-border-light flex items-center justify-between bg-bg-subtle/50 text-xs">
+            <span className="text-admin-text-secondary-light font-mono">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-admin-border-light bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Previous Page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    currentPage === pageNum
+                      ? "bg-[#FFB900] text-black font-black"
+                      : "bg-white border border-admin-border-light hover:bg-line-200 text-ink-800"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-lg border border-admin-border-light bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Next Page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Coupon Modal */}

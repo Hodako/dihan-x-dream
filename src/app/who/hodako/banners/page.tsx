@@ -345,24 +345,7 @@ export default function AdminBannersPage() {
           </h1>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handlePurgeAllBanners}
-            className="px-3.5 py-2 bg-admin-danger/10 text-admin-danger hover:bg-admin-danger hover:text-white rounded-lg text-xs font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Purge All Banners</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleResetBanners}
-            className="px-3.5 py-2 bg-line-200 text-admin-text-primary-light hover:bg-line-300 rounded-lg text-xs font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset Defaults</span>
-          </button>
-        </div>
+        <div></div>
       </div>
 
       {/* TOP ANNOUNCEMENT BAR CMS */}

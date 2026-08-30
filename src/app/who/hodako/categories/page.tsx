@@ -279,14 +279,6 @@ export default function AdminCategoriesPage() {
 
         <div className="flex gap-2">
           <button
-            type="button"
-            onClick={handleResetCategories}
-            className="px-4 py-2.5 bg-line-200 text-admin-text-primary-light hover:bg-line-300 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Reset Defaults</span>
-          </button>
-          <button
             onClick={handleOpenCreate}
             className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
           >

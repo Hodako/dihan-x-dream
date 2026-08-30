@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   Package,
@@ -19,6 +19,8 @@ import {
   RefreshCw,
   Send,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Order, OrderStatus, SteadfastInfo } from "@/types";
 import { formatPrice } from "@/lib/utils";
@@ -205,19 +207,34 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const filteredOrders = orders.filter((o) => {
-    if (statusFilter !== "all" && o.status !== statusFilter) return false;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      return (
-        o.orderNumber.toLowerCase().includes(q) ||
-        o.customerName.toLowerCase().includes(q) ||
-        o.customerPhone.toLowerCase().includes(q) ||
-        (o.steadfast?.tracking_code && o.steadfast.tracking_code.toLowerCase().includes(q))
-      );
-    }
-    return true;
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      if (statusFilter !== "all" && o.status !== statusFilter) return false;
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        return (
+          o.orderNumber.toLowerCase().includes(q) ||
+          o.customerName.toLowerCase().includes(q) ||
+          o.customerPhone.toLowerCase().includes(q) ||
+          (o.steadfast?.tracking_code && o.steadfast.tracking_code.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [orders, statusFilter, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
+
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE) || 1;
+  const paginatedOrders = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredOrders, currentPage]);
 
   return (
     <div className="space-y-8">
@@ -277,35 +294,41 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line-100 text-admin-text-primary-light">
-              {filteredOrders.map((ord) => (
+              {paginatedOrders.map((ord) => (
                 <tr key={ord.id} className="hover:bg-bg-subtle/50 transition-colors">
                   <td className="p-4 font-mono font-bold text-admin-accent">{ord.orderNumber}</td>
                   <td className="p-4 text-admin-text-secondary-light">
-                    {new Date(ord.createdAt).toLocaleDateString("en-BD")}
+                    {new Date(ord.createdAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </td>
                   <td className="p-4">
-                    <p className="font-bold text-admin-text-primary-light">{ord.customerName}</p>
-                    <p className="text-[11px] font-mono text-admin-text-secondary-light">{ord.customerPhone}</p>
+                    <span className="font-bold block text-admin-text-primary-light uppercase">{ord.customerName}</span>
+                    <span className="text-admin-text-secondary-light font-mono text-[11px] block">{ord.customerPhone}</span>
                   </td>
-                  <td className="p-4 uppercase">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-bg-subtle border border-line-200">
-                      {ord.paymentMethod === "cod"
-                        ? "Full COD"
-                        : ord.paymentMethod === "partial"
-                        ? "Partial Advance"
-                        : "Online Paid"}
+                  <td className="p-4">
+                    <span className="font-semibold uppercase text-admin-text-primary-light block">
+                      {ord.paymentMethod.replace("_", " ")}
+                    </span>
+                    <span className="text-[10px] uppercase text-admin-text-secondary-light">
+                      {ord.paymentStatus}
                     </span>
                   </td>
                   <td className="p-4">
                     <span
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      className={`inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
                         ord.status === "delivered"
-                          ? "bg-admin-success/15 text-admin-success"
+                          ? "bg-df-success-soft text-df-success"
                           : ord.status === "shipped"
-                          ? "bg-admin-info/15 text-admin-info"
+                          ? "bg-blue-100 text-blue-800"
                           : ord.status === "processing"
-                          ? "bg-admin-accent-soft text-admin-accent"
-                          : "bg-admin-warning/15 text-admin-warning"
+                          ? "bg-purple-100 text-purple-800"
+                          : ord.status === "cancelled"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-amber-100 text-amber-900"
                       }`}
                     >
                       {ord.status}
@@ -314,7 +337,7 @@ export default function AdminOrdersPage() {
                   <td className="p-4">
                     {ord.steadfast ? (
                       <div className="space-y-0.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 block w-fit">
+                        <span className="text-blue-700 font-mono font-bold block text-[11px]">
                           {ord.steadfast.tracking_code}
                         </span>
                         <span className="text-[10px] text-gray-500 block uppercase">
@@ -350,13 +373,60 @@ export default function AdminOrdersPage() {
               {filteredOrders.length === 0 && (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-admin-text-secondary-light">
-                    No orders found.
+                    No orders found matching filters.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Orders Table Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-admin-border-light flex items-center justify-between bg-bg-subtle/50 text-xs">
+            <span className="text-admin-text-secondary-light font-mono">
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+              {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)} of {filteredOrders.length} Orders
+            </span>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-admin-border-light bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Previous Page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    currentPage === pageNum
+                      ? "bg-[#FFB900] text-black font-black"
+                      : "bg-white border border-admin-border-light hover:bg-line-200 text-ink-800"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-lg border border-admin-border-light bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Next Page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Order Detail Inspection Modal */}

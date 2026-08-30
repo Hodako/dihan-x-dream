@@ -12,6 +12,7 @@ import {
   LayoutGrid,
   Sparkles,
   ChevronRight,
+  ChevronLeft,
   Filter,
   Check,
 } from "lucide-react";
@@ -25,6 +26,8 @@ interface CategoryClientProps {
   slug: string;
 }
 
+const ITEMS_PER_PAGE = 12;
+
 export default function CategoryClient({ slug }: CategoryClientProps) {
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -32,6 +35,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "discount">("newest");
   const [priceFilter, setPriceFilter] = useState<"all" | "under-1500" | "sale" | "in-stock">("all");
   const [gridCols, setGridCols] = useState<3 | 4>(4);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function loadData() {
@@ -77,6 +81,10 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
     }
     loadData();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [slug, priceFilter, sortBy]);
 
   const currentCategory = useMemo(() => {
     if (slug === "all") {
@@ -127,6 +135,12 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
     }
     return prods;
   }, [allProducts, slug, priceFilter, sortBy]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   return (
     <div className="pt-[105px] sm:pt-[110px] lg:pt-[95px] pb-16 bg-[#FAFAFA] min-h-screen">
@@ -291,14 +305,74 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
 
         {/* Product Grid */}
         {filteredProducts.length > 0 ? (
-          <div
-            className={`grid grid-cols-2 ${
-              gridCols === 3 ? "sm:grid-cols-2 md:grid-cols-3" : "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-            } gap-2.5 sm:gap-4 md:gap-5`}
-          >
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="space-y-8">
+            <div
+              className={`grid grid-cols-2 ${
+                gridCols === 3 ? "sm:grid-cols-2 md:grid-cols-3" : "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              } gap-2.5 sm:gap-4 md:gap-5`}
+            >
+              {paginatedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-line-200">
+                <span className="text-xs text-ink-500 font-mono">
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+                  {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} Items
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.max(1, p - 1));
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="p-2 rounded-xl border border-line-200 bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed text-xs font-bold transition-colors flex items-center gap-1"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Previous</span>
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage(pageNum);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        currentPage === pageNum
+                          ? "bg-[#0E0E0E] text-white shadow-xs"
+                          : "bg-white border border-line-200 hover:border-ink-900 text-ink-800"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.min(totalPages, p + 1));
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="p-2 rounded-xl border border-line-200 bg-white hover:bg-line-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed text-xs font-bold transition-colors flex items-center gap-1"
+                    aria-label="Next Page"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-16 text-center space-y-4 bg-white rounded-2xl border border-line-200 shadow-2xs p-6">

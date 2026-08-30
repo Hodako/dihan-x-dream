@@ -17,6 +17,12 @@ import {
 import { useUIStore } from "@/store/useUIStore";
 import { doc, getDoc, setDoc, deleteDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import {
+  INITIAL_PRODUCTS,
+  INITIAL_CATEGORIES,
+  INITIAL_BANNERS,
+  INITIAL_LOOKBOOK,
+} from "@/lib/seedData";
 
 export default function AdminSettingsPage() {
   const { addToast } = useUIStore();
@@ -34,11 +40,17 @@ export default function AdminSettingsPage() {
   const [steadfastBaseUrl, setSteadfastBaseUrl] = useState("https://portal.packzy.com/api/v1");
   const [autoSendToCourier, setAutoSendToCourier] = useState(false);
 
-  // Danger Zone Confirmation Strings
+  // Danger Zone & Reset Confirmation Strings
   const [purgeOrdersConfirm, setPurgeOrdersConfirm] = useState("");
   const [purgeProductsConfirm, setPurgeProductsConfirm] = useState("");
+  const [resetCatalogConfirm, setResetCatalogConfirm] = useState("");
+  const [resetCategoriesConfirm, setResetCategoriesConfirm] = useState("");
+  const [resetSpinnerConfirm, setResetSpinnerConfirm] = useState("");
+  const [resetBannersConfirm, setResetBannersConfirm] = useState("");
+
   const [isPurgingOrders, setIsPurgingOrders] = useState(false);
   const [isPurgingProducts, setIsPurgingProducts] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load from Firestore & LocalStorage
@@ -147,12 +159,108 @@ export default function AdminSettingsPage() {
         await deleteDoc(doc(db, "products", d.id));
       }
       localStorage.removeItem("dream_deleted_products");
+      localStorage.removeItem("dream_custom_products");
       setPurgeProductsConfirm("");
       addToast("All products database has been cleared.", "info");
     } catch (err: any) {
       addToast(err.message || "Error purging products", "error");
     } finally {
       setIsPurgingProducts(false);
+    }
+  };
+
+  const handleExecuteResetCatalog = async () => {
+    if (resetCatalogConfirm !== "RESET CATALOG") {
+      addToast('Please type exact confirmation text "RESET CATALOG"', "error");
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      localStorage.removeItem("dream_deleted_products");
+      localStorage.removeItem("dream_custom_products");
+      const snap = await getDocs(collection(db, "products"));
+      for (const d of snap.docs) {
+        await deleteDoc(doc(db, "products", d.id));
+      }
+      for (const p of INITIAL_PRODUCTS) {
+        await setDoc(doc(db, "products", p.id), p);
+      }
+      setResetCatalogConfirm("");
+      addToast("Catalog reset with default high-quality apparel items.", "success");
+    } catch (e: any) {
+      addToast(e.message || "Error resetting catalog", "error");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleExecuteResetCategories = async () => {
+    if (resetCategoriesConfirm !== "RESET CATEGORIES") {
+      addToast('Please type exact confirmation text "RESET CATEGORIES"', "error");
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      localStorage.setItem("dream_categories_settings", JSON.stringify({
+        categories: INITIAL_CATEGORIES,
+        headerCategories: ["casual-shirts", "polos", "men"],
+      }));
+      await setDoc(doc(db, "settings", "categories"), {
+        categories: INITIAL_CATEGORIES,
+        headerCategories: ["casual-shirts", "polos", "men"],
+        updatedAt: new Date().toISOString(),
+      });
+      setResetCategoriesConfirm("");
+      addToast("Taxonomy and top header categories restored to defaults.", "success");
+    } catch (e: any) {
+      addToast(e.message || "Error resetting categories", "error");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleExecuteResetSpinner = async () => {
+    if (resetSpinnerConfirm !== "RESET SPINNER") {
+      addToast('Please type exact confirmation text "RESET SPINNER"', "error");
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      localStorage.removeItem("dream_spinner_settings");
+      await deleteDoc(doc(db, "settings", "spinner"));
+      setResetSpinnerConfirm("");
+      addToast("Lucky Spinner configuration reset to default slices and odds.", "success");
+    } catch (e: any) {
+      addToast(e.message || "Error resetting spinner", "error");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleExecuteResetBanners = async () => {
+    if (resetBannersConfirm !== "RESET BANNERS") {
+      addToast('Please type exact confirmation text "RESET BANNERS"', "error");
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      localStorage.removeItem("dream_banners_settings");
+      await setDoc(doc(db, "settings", "banners"), {
+        banners: INITIAL_BANNERS,
+        lookbooks: INITIAL_LOOKBOOK,
+        announcement: { enabled: true, text: "FLAT 10% OFF YOUR FIRST ORDER | USE CODE: DREAM10" },
+        updatedAt: new Date().toISOString(),
+      });
+      setResetBannersConfirm("");
+      addToast("Storefront photography and lookbooks reset to defaults.", "success");
+    } catch (e: any) {
+      addToast(e.message || "Error resetting banners", "error");
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -346,6 +454,110 @@ export default function AdminSettingsPage() {
               className="w-full py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               {isPurgingProducts ? "Purging..." : "Confirm Purge Products"}
+            </button>
+          </div>
+
+          {/* Reset Catalog to Defaults */}
+          <div className="bg-white border border-amber-200 p-5 rounded-xl space-y-3">
+            <h3 className="text-xs font-bold uppercase text-amber-800 flex items-center gap-1.5">
+              <RefreshCw className="w-4 h-4 text-amber-600" />
+              <span>Restore Default Catalog</span>
+            </h3>
+            <p className="text-[11px] text-ink-500">
+              Restores default high-quality apparel catalog. Type <strong>RESET CATALOG</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder='Type "RESET CATALOG"'
+              value={resetCatalogConfirm}
+              onChange={(e) => setResetCatalogConfirm(e.target.value)}
+              className="w-full text-xs p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 font-mono focus:outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              disabled={resetCatalogConfirm !== "RESET CATALOG" || isResetting}
+              onClick={handleExecuteResetCatalog}
+              className="w-full py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isResetting ? "Restoring..." : "Restore Default Products"}
+            </button>
+          </div>
+
+          {/* Reset Categories to Defaults */}
+          <div className="bg-white border border-amber-200 p-5 rounded-xl space-y-3">
+            <h3 className="text-xs font-bold uppercase text-amber-800 flex items-center gap-1.5">
+              <RefreshCw className="w-4 h-4 text-amber-600" />
+              <span>Restore Default Categories</span>
+            </h3>
+            <p className="text-[11px] text-ink-500">
+              Restores default taxonomy & top header menus. Type <strong>RESET CATEGORIES</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder='Type "RESET CATEGORIES"'
+              value={resetCategoriesConfirm}
+              onChange={(e) => setResetCategoriesConfirm(e.target.value)}
+              className="w-full text-xs p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 font-mono focus:outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              disabled={resetCategoriesConfirm !== "RESET CATEGORIES" || isResetting}
+              onClick={handleExecuteResetCategories}
+              className="w-full py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isResetting ? "Restoring..." : "Restore Default Categories"}
+            </button>
+          </div>
+
+          {/* Reset Spinner to Defaults */}
+          <div className="bg-white border border-amber-200 p-5 rounded-xl space-y-3">
+            <h3 className="text-xs font-bold uppercase text-amber-800 flex items-center gap-1.5">
+              <RefreshCw className="w-4 h-4 text-amber-600" />
+              <span>Restore Default Spinner</span>
+            </h3>
+            <p className="text-[11px] text-ink-500">
+              Restores default wheel prizes & odds. Type <strong>RESET SPINNER</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder='Type "RESET SPINNER"'
+              value={resetSpinnerConfirm}
+              onChange={(e) => setResetSpinnerConfirm(e.target.value)}
+              className="w-full text-xs p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 font-mono focus:outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              disabled={resetSpinnerConfirm !== "RESET SPINNER" || isResetting}
+              onClick={handleExecuteResetSpinner}
+              className="w-full py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isResetting ? "Restoring..." : "Restore Default Spinner"}
+            </button>
+          </div>
+
+          {/* Reset Banners to Defaults */}
+          <div className="bg-white border border-amber-200 p-5 rounded-xl space-y-3">
+            <h3 className="text-xs font-bold uppercase text-amber-800 flex items-center gap-1.5">
+              <RefreshCw className="w-4 h-4 text-amber-600" />
+              <span>Restore Default Banners</span>
+            </h3>
+            <p className="text-[11px] text-ink-500">
+              Restores hero banners & lookbooks. Type <strong>RESET BANNERS</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder='Type "RESET BANNERS"'
+              value={resetBannersConfirm}
+              onChange={(e) => setResetBannersConfirm(e.target.value)}
+              className="w-full text-xs p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 font-mono focus:outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              disabled={resetBannersConfirm !== "RESET BANNERS" || isResetting}
+              onClick={handleExecuteResetBanners}
+              className="w-full py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white text-xs font-bold uppercase rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isResetting ? "Restoring..." : "Restore Default Banners"}
             </button>
           </div>
         </div>
