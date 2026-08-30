@@ -11,6 +11,7 @@ interface ProductRailProps {
   subtitle?: string;
   viewAllLink: string;
   products: Product[];
+  loading?: boolean;
 }
 
 export default function ProductRail({
@@ -18,6 +19,7 @@ export default function ProductRail({
   subtitle,
   viewAllLink,
   products,
+  loading = false,
 }: ProductRailProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [tiltAngle, setTiltAngle] = useState(0);
@@ -40,10 +42,10 @@ export default function ProductRail({
     }, 150);
   };
 
-  if (products.length === 0) return null;
+  if (!loading && products.length === 0) return null;
 
   return (
-    <section className="py-3 sm:py-8 bg-white relative group overflow-hidden">
+    <section className="py-3 sm:py-8 bg-white relative group overflow-hidden min-h-[260px]">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-2.5 sm:mb-4">
@@ -77,19 +79,36 @@ export default function ProductRail({
               scrollSnapType: "x mandatory",
             }}
           >
-            {products.map((product) => (
-              <div
-                key={product.id}
-                style={{
-                  transform: tiltAngle !== 0 ? `rotateY(${tiltAngle}deg) scale(${1 - Math.abs(tiltAngle) * 0.008})` : undefined,
-                  transition: tiltAngle === 0 ? "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)" : "transform 0.08s ease-out",
-                  scrollSnapAlign: "start",
-                }}
-                className="w-[44vw] sm:w-[30vw] md:w-[23vw] lg:w-[21vw] flex-shrink-0"
-              >
-                <ProductCard product={product} />
-              </div>
-            ))}
+            {loading && products.length === 0 ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-[44vw] sm:w-[30vw] md:w-[23vw] lg:w-[21vw] flex-shrink-0"
+                >
+                  <div className="flex flex-col bg-white rounded-xl sm:rounded-2xl border border-line-200 overflow-hidden shadow-2xs">
+                    <div className="relative aspect-3/4 w-full bg-gradient-to-r from-line-100 via-line-200 to-line-100 animate-pulse" />
+                    <div className="p-2 sm:p-3.5 space-y-2">
+                      <div className="h-3.5 w-3/4 bg-line-200 rounded animate-pulse" />
+                      <div className="h-4 w-1/3 bg-line-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              products.map((product) => (
+                <div
+                  key={product.id}
+                  style={{
+                    transform: tiltAngle !== 0 ? `rotateY(${tiltAngle}deg) scale(${1 - Math.abs(tiltAngle) * 0.008})` : undefined,
+                    transition: tiltAngle === 0 ? "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)" : "transform 0.08s ease-out",
+                    scrollSnapAlign: "start",
+                  }}
+                  className="w-[44vw] sm:w-[30vw] md:w-[23vw] lg:w-[21vw] flex-shrink-0"
+                >
+                  <ProductCard product={product} />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

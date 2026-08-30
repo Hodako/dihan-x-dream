@@ -29,9 +29,43 @@ interface CategoryClientProps {
 const ITEMS_PER_PAGE = 12;
 
 export default function CategoryClient({ slug }: CategoryClientProps) {
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [allProducts, setAllProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cachedCats = localStorage.getItem("dream_categories_settings");
+        if (cachedCats) {
+          const parsed = JSON.parse(cachedCats);
+          if (parsed.categories && parsed.categories.length > 0) return parsed.categories;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_CATEGORIES;
+  });
+
+  const [allProducts, setAllProducts] = useState<Product[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+        let combined = [...localCustom];
+        for (const p of cachedCatalog) {
+          if (!combined.some((item) => item.id === p.id)) combined.push(p);
+        }
+        return combined.filter((p) => !deletedIds.includes(p.id));
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("dream_catalog_cache");
+      const local = localStorage.getItem("dream_custom_products");
+      if (cached || local) return false;
+    }
+    return true;
+  });
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "discount">("newest");
   const [priceFilter, setPriceFilter] = useState<"all" | "under-1500" | "sale" | "in-stock">("all");
   const [gridCols, setGridCols] = useState<3 | 4>(4);
@@ -42,9 +76,11 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
       // 1. Instant Cache from LocalStorage
       let localCustom: Product[] = [];
       let deletedIds: string[] = [];
+      let cachedCatalog: Product[] = [];
       if (typeof window !== "undefined") {
         deletedIds = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
         localCustom = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        cachedCatalog = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
         const cachedCats = localStorage.getItem("dream_categories_settings");
         if (cachedCats) {
           try {
@@ -57,12 +93,14 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
       }
 
       let allProds: Product[] = [...localCustom];
-      for (const p of INITIAL_PRODUCTS) {
+      for (const p of cachedCatalog) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }
       }
-      setAllProducts(allProds.filter((p) => !deletedIds.includes(p.id)));
+      if (allProds.length > 0) {
+        setAllProducts(allProds.filter((p) => !deletedIds.includes(p.id)));
+      }
 
       try {
         const catSnap = await getDoc(doc(db, "settings", "categories"));
@@ -86,6 +124,9 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
         setAllProducts(finalProds);
         setLoading(false);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
+        }
       }
     }
     loadData();

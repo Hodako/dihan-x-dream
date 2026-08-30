@@ -19,43 +19,119 @@ import PromoBanner from "@/components/storefront/home/PromoBanner";
 import TrustRow from "@/components/storefront/TrustRow";
 
 export default function HomePage() {
-  const [banners, setBanners] = useState<BannerSlide[]>(INITIAL_BANNERS);
-  const [trendingTiles, setTrendingTiles] = useState<TrendingTile[]>(INITIAL_TRENDING_TILES);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [lookbookItems, setLookbookItems] = useState<LookbookItem[]>(INITIAL_LOOKBOOK);
-  const [loading, setLoading] = useState(true);
+  const [banners, setBanners] = useState<BannerSlide[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("dream_home_banners");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_BANNERS;
+  });
+
+  const [trendingTiles, setTrendingTiles] = useState<TrendingTile[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("dream_home_tiles");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_TRENDING_TILES;
+  });
+
+  const [lookbookItems, setLookbookItems] = useState<LookbookItem[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("dream_home_lookbook");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_LOOKBOOK;
+  });
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+        let combined = [...localCustom];
+        for (const p of cachedCatalog) {
+          if (!combined.some((item) => item.id === p.id)) combined.push(p);
+        }
+        return combined.filter((p) => !deletedIds.includes(p.id));
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("dream_catalog_cache");
+      const local = localStorage.getItem("dream_custom_products");
+      if (cached || local) return false;
+    }
+    return true;
+  });
 
   useEffect(() => {
     async function loadData() {
       // 1. Instant local sync
       const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
       const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
+      const cachedCatalog: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]") : [];
       
       let initialList: Product[] = [...localCustom];
-      for (const p of INITIAL_PRODUCTS) {
+      for (const p of cachedCatalog) {
         if (!initialList.some((item) => item.id === p.id)) {
           initialList.push(p);
         }
       }
-      setProducts(initialList.filter((p) => !deletedIds.includes(p.id)));
+      if (initialList.length > 0) {
+        setProducts(initialList.filter((p) => !deletedIds.includes(p.id)));
+      }
 
       try {
+        // Fetch and cache Banners
         const bannerSnap = await getDocs(query(collection(db, "banners"), orderBy("order", "asc")));
         if (!bannerSnap.empty) {
           const loadedBanners = bannerSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as BannerSlide));
           setBanners(loadedBanners);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("dream_home_banners", JSON.stringify(loadedBanners));
+          }
         }
 
+        // Fetch and cache Trending Tiles
         const tileSnap = await getDoc(doc(db, "settings", "trendingTiles"));
         if (tileSnap.exists() && tileSnap.data().tiles) {
-          setTrendingTiles(tileSnap.data().tiles);
+          const tiles = tileSnap.data().tiles;
+          setTrendingTiles(tiles);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("dream_home_tiles", JSON.stringify(tiles));
+          }
         }
 
+        // Fetch and cache Lookbook
         const lbSnap = await getDoc(doc(db, "settings", "lookbook"));
         if (lbSnap.exists() && lbSnap.data().items) {
-          setLookbookItems(lbSnap.data().items);
+          const items = lbSnap.data().items;
+          setLookbookItems(items);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("dream_home_lookbook", JSON.stringify(items));
+          }
         }
 
+        // Fetch and cache Products
         let allProds: Product[] = [...initialList];
 
         try {
@@ -75,8 +151,11 @@ export default function HomePage() {
 
         const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
         setProducts(finalProds);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
+        }
       } catch (err) {
-        // Keep baseline products intact
+        // Maintain local cached data
       } finally {
         setLoading(false);
       }
@@ -97,15 +176,16 @@ export default function HomePage() {
       {/* 2. Slideable Curved Rectangles Rail */}
       <TrendingStrip tiles={trendingTiles} />
 
-      {/* 3. Featured Products Grid */}
-      <BestSellersGrid products={featuredProducts} title="Featured Products" />
+      {/* 3. Featured Products Grid (with structured non-shifting skeleton) */}
+      <BestSellersGrid products={featuredProducts} title="Featured Products" loading={loading} />
 
-      {/* 4. New Arrivals Scroll Rail */}
+      {/* 4. New Arrivals Scroll Rail (with structured non-shifting skeleton) */}
       <ProductRail
         title="New Arrivals"
         subtitle="Explore the latest casual shirts and polos"
         viewAllLink="/shop?sort=newest"
         products={newArrivals.length > 0 ? newArrivals : products}
+        loading={loading}
       />
 
       {/* 5. Editorial Lookbook */}

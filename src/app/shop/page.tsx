@@ -17,7 +17,21 @@ function ShopContent() {
   const sortParam = searchParams.get("sort");
   const searchParam = searchParams.get("q") || searchParams.get("search") || "";
 
-  const [productsList, setProductsList] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [productsList, setProductsList] = useState<Product[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+        let combined = [...localCustom];
+        for (const p of cachedCatalog) {
+          if (!combined.some((item) => item.id === p.id)) combined.push(p);
+        }
+        return combined.filter((p) => !deletedIds.includes(p.id));
+      } catch (e) {}
+    }
+    return [];
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -30,14 +44,17 @@ function ShopContent() {
     async function loadFirestoreProducts() {
       const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
       const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
+      const cachedCatalog: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]") : [];
       
       let allProds: Product[] = [...localCustom];
-      for (const p of INITIAL_PRODUCTS) {
+      for (const p of cachedCatalog) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }
       }
-      setProductsList(allProds.filter((p) => !deletedIds.includes(p.id)));
+      if (allProds.length > 0) {
+        setProductsList(allProds.filter((p) => !deletedIds.includes(p.id)));
+      }
 
       try {
         const { collection, getDocs, query, limit } = await import("firebase/firestore");
@@ -58,6 +75,9 @@ function ShopContent() {
 
       const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
       setProductsList(finalProds);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
+      }
     }
     loadFirestoreProducts();
   }, []);

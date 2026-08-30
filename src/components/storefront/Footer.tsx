@@ -77,7 +77,15 @@ function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function Footer() {
   const { addToast } = useUIStore();
-  const [footer, setFooter] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
+  const [footer, setFooter] = useState<FooterSettings>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("dream_footer_settings");
+        if (stored) return JSON.parse(stored) as FooterSettings;
+      } catch (e) {}
+    }
+    return INITIAL_FOOTER_SETTINGS;
+  });
   const [clubPhone, setClubPhone] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
@@ -96,7 +104,13 @@ export default function Footer() {
       try {
         const snap = await getDoc(doc(db, "settings", "footer"));
         if (snap.exists()) {
-          setFooter(snap.data() as FooterSettings);
+          const footData = snap.data() as FooterSettings;
+          setFooter(footData);
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("dream_footer_settings", JSON.stringify(footData));
+            } catch (e) {}
+          }
         }
       } catch (e) {}
     }
