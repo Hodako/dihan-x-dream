@@ -54,8 +54,9 @@ export default function AdminLayout({
 
   const navItems = [
     { label: "Dashboard", href: "/who/hodako", icon: LayoutDashboard },
+    { label: "Home Sections", href: "/who/hodako/sections", icon: Layers },
     { label: "Products", href: "/who/hodako/products", icon: ShoppingBag },
-    { label: "Categories & Nav", href: "/who/hodako/categories", icon: Layers },
+    { label: "Categories & Nav", href: "/who/hodako/categories", icon: Palette },
     { label: "Orders", href: "/who/hodako/orders", icon: Package },
     { label: "Delivery & Logistics", href: "/who/hodako/logistics", icon: Truck },
     { label: "Banners & Lookbook", href: "/who/hodako/banners", icon: ImageIcon },

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, getDoc, doc, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Product, BannerSlide, TrendingTile, LookbookItem } from "@/types";
+import { Product, BannerSlide, TrendingTile, LookbookItem, HomeSection } from "@/types";
 import {
   INITIAL_BANNERS,
-  INITIAL_PRODUCTS,
   INITIAL_TRENDING_TILES,
   INITIAL_LOOKBOOK,
+  INITIAL_HOME_SECTIONS,
 } from "@/lib/seedData";
 import HeroCarousel from "@/components/storefront/home/HeroCarousel";
 import TrendingStrip from "@/components/storefront/home/TrendingStrip";
@@ -19,6 +19,19 @@ import PromoBanner from "@/components/storefront/home/PromoBanner";
 import TrustRow from "@/components/storefront/TrustRow";
 
 export default function HomePage() {
+  const [sections, setSections] = useState<HomeSection[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("dream_home_sections");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_HOME_SECTIONS;
+  });
+
   const [banners, setBanners] = useState<BannerSlide[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -84,6 +97,35 @@ export default function HomePage() {
   });
 
   useEffect(() => {
+    const syncLocalSections = () => {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_home_sections");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setSections(parsed);
+            }
+          } catch (e) {}
+        }
+      }
+    };
+
+    window.addEventListener("storage", syncLocalSections);
+    window.addEventListener("dream_sections_changed", syncLocalSections);
+
+    const unsubSections = onSnapshot(doc(db, "settings", "home_sections"), (snap) => {
+      if (snap.exists() && Array.isArray(snap.data().sections)) {
+        const remoteSections = snap.data().sections as HomeSection[];
+        setSections(remoteSections);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("dream_home_sections", JSON.stringify(remoteSections));
+          } catch (e) {}
+        }
+      }
+    });
+
     async function loadData() {
       // 1. Instant local sync
       const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
@@ -101,8 +143,13 @@ export default function HomePage() {
       }
 
       try {
-        // Fetch and cache Banners
-        const bannerSnap = await getDocs(query(collection(db, "banners"), orderBy("order", "asc")));
+        // Parallel fetch for ultra-fast load
+        const [bannerSnap, tileSnap, lbSnap] = await Promise.all([
+          getDocs(query(collection(db, "banners"), orderBy("order", "asc"))),
+          getDoc(doc(db, "settings", "trendingTiles")),
+          getDoc(doc(db, "settings", "lookbook")),
+        ]);
+
         if (!bannerSnap.empty) {
           const loadedBanners = bannerSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as BannerSlide));
           setBanners(loadedBanners);
@@ -111,8 +158,6 @@ export default function HomePage() {
           }
         }
 
-        // Fetch and cache Trending Tiles
-        const tileSnap = await getDoc(doc(db, "settings", "trendingTiles"));
         if (tileSnap.exists() && tileSnap.data().tiles) {
           const tiles = tileSnap.data().tiles;
           setTrendingTiles(tiles);
@@ -121,8 +166,6 @@ export default function HomePage() {
           }
         }
 
-        // Fetch and cache Lookbook
-        const lbSnap = await getDoc(doc(db, "settings", "lookbook"));
         if (lbSnap.exists() && lbSnap.data().items) {
           const items = lbSnap.data().items;
           setLookbookItems(items);
@@ -131,9 +174,8 @@ export default function HomePage() {
           }
         }
 
-        // Fetch and cache Products
+        // Fetch Products
         let allProds: Product[] = [...initialList];
-
         try {
           const prodSnap = await getDocs(query(collection(db, "products"), limit(50)));
           if (!prodSnap.empty) {
@@ -155,47 +197,125 @@ export default function HomePage() {
           localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
         }
       } catch (err) {
-        // Maintain local cached data
       } finally {
         setLoading(false);
       }
     }
 
     loadData();
+
+    return () => {
+      window.removeEventListener("storage", syncLocalSections);
+      window.removeEventListener("dream_sections_changed", syncLocalSections);
+      unsubSections();
+    };
   }, []);
 
-  const newArrivals = products.filter((p) => p.isNew);
-  const trendingProducts = products.filter((p) => p.isTrending);
-  const featuredProducts = products;
+  const getSectionProducts = (sec: HomeSection) => {
+    let prods = [...products];
+    if (sec.filterType === "new") {
+      prods = prods.filter((p) => p.isNew);
+    } else if (sec.filterType === "trending") {
+      prods = prods.filter((p) => p.isTrending);
+    } else if (sec.filterType === "featured") {
+      prods = prods.filter((p) => p.isFeatured || p.isTrending);
+    } else if (sec.filterType === "category" && sec.categorySlug) {
+      prods = prods.filter((p) => p.category === sec.categorySlug);
+    } else if (sec.filterType === "custom_tag" && sec.customTag) {
+      prods = prods.filter((p) => p.tags && p.tags.includes(sec.customTag!));
+    }
+    const maxLimit = sec.limit || 8;
+    return prods.slice(0, maxLimit);
+  };
+
+  const activeSections = [...sections]
+    .filter((s) => s.active)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
-    <div className="min-h-screen pt-[105px] sm:pt-[110px] lg:pt-[84px] pb-8 bg-white">
-      {/* 1. Curved Hero Banner (Minimal height, clean photography, no button tag) */}
-      <HeroCarousel slides={banners} />
+    <div className="min-h-screen pt-[105px] sm:pt-[110px] lg:pt-[84px] pb-8 bg-white space-y-2">
+      {activeSections.map((sec) => {
+        switch (sec.type) {
+          case "hero_carousel":
+            return <HeroCarousel key={sec.id} slides={banners} />;
 
-      {/* 2. Slideable Curved Rectangles Rail */}
-      <TrendingStrip tiles={trendingTiles} />
+          case "trending_strip":
+            return <TrendingStrip key={sec.id} tiles={trendingTiles} />;
 
-      {/* 3. Featured Products Grid (with structured non-shifting skeleton) */}
-      <BestSellersGrid products={featuredProducts} title="Featured Products" loading={loading} />
+          case "product_grid": {
+            const secProds = getSectionProducts(sec);
+            return (
+              <BestSellersGrid
+                key={sec.id}
+                products={secProds}
+                title={sec.title}
+                loading={loading}
+              />
+            );
+          }
 
-      {/* 4. New Arrivals Scroll Rail (with structured non-shifting skeleton) */}
-      <ProductRail
-        title="New Arrivals"
-        subtitle="Explore the latest casual shirts and polos"
-        viewAllLink="/shop?sort=newest"
-        products={newArrivals.length > 0 ? newArrivals : products}
-        loading={loading}
-      />
+          case "product_rail": {
+            const secProds = getSectionProducts(sec);
+            return (
+              <ProductRail
+                key={sec.id}
+                title={sec.title}
+                subtitle={sec.subtitle}
+                viewAllLink={sec.viewAllLink || "/shop"}
+                products={secProds}
+                loading={loading}
+              />
+            );
+          }
 
-      {/* 5. Editorial Lookbook */}
-      <LookbookBlock items={lookbookItems} />
+          case "lookbook":
+            return <LookbookBlock key={sec.id} items={lookbookItems} />;
 
-      {/* 6. Flash Sale Promo Banner */}
-      <PromoBanner />
+          case "promo_banner":
+            return (
+              <PromoBanner
+                key={sec.id}
+                heading={sec.bannerHeading}
+                subtext={sec.bannerSubtext}
+                badgeText={sec.badgeText}
+                ctaText={sec.bannerCtaText}
+                ctaLink={sec.bannerCtaLink}
+              />
+            );
 
-      {/* 7. Trust Badges */}
-      <TrustRow />
+          case "trust_row":
+            return <TrustRow key={sec.id} />;
+
+          case "text_banner":
+            return (
+              <div key={sec.id} className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 my-2">
+                <div className="bg-[#0A0A0A] text-white p-4 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                  <div>
+                    <h3 className="font-heading font-black text-sm sm:text-lg uppercase tracking-wider text-[#FFB900]">
+                      {sec.title}
+                    </h3>
+                    {sec.subtitle && (
+                      <p className="text-xs text-neutral-300 mt-0.5 font-light">
+                        {sec.subtitle}
+                      </p>
+                    )}
+                  </div>
+                  {sec.viewAllLink && (
+                    <a
+                      href={sec.viewAllLink}
+                      className="px-4 py-2 bg-[#FFB900] text-black text-xs font-bold uppercase rounded-xl hover:bg-[#E5A700] transition-colors whitespace-nowrap"
+                    >
+                      {sec.badgeText || "Explore"}
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+
+          default:
+            return null;
+        }
+      })}
     </div>
   );
 }

@@ -297,3 +297,37 @@ export interface FooterSettings {
   policyLinks: FooterLink[];
 }
 
+export type HomeSectionType =
+  | "hero_carousel"
+  | "trending_strip"
+  | "product_grid"
+  | "product_rail"
+  | "lookbook"
+  | "promo_banner"
+  | "category_grid"
+  | "text_banner"
+  | "trust_row";
+
+export interface HomeSection {
+  id: string;
+  type: HomeSectionType;
+  title: string;
+  subtitle?: string;
+  active: boolean;
+  order: number;
+  // Product Grid/Rail Filter Configurations:
+  filterType?: "all" | "category" | "featured" | "new" | "trending" | "custom_tag";
+  categorySlug?: string;
+  customTag?: string;
+  viewAllLink?: string;
+  limit?: number;
+  badgeText?: string;
+  // Custom Banner / Promo / Highlight configurations:
+  bannerImage?: string;
+  bannerHeading?: string;
+  bannerSubtext?: string;
+  bannerCtaText?: string;
+  bannerCtaLink?: string;
+  bannerBgTheme?: "dark" | "gold" | "light" | "red";
+}
+

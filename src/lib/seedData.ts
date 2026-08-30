@@ -1,4 +1,4 @@
-import { Product, Category, BannerSlide, LookbookItem, TrendingTile, LogisticsSettings, DeliveryZone, Coupon, AnnouncementSettings, FooterSettings } from '@/types';
+import { Product, Category, BannerSlide, LookbookItem, TrendingTile, LogisticsSettings, DeliveryZone, Coupon, AnnouncementSettings, FooterSettings, HomeSection } from '@/types';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -249,11 +249,77 @@ export const INITIAL_COUPONS: Coupon[] = [
   },
 ];
 
+export const INITIAL_HOME_SECTIONS: HomeSection[] = [
+  {
+    id: "sec-hero",
+    type: "hero_carousel",
+    title: "Hero Banner Slider",
+    active: true,
+    order: 1,
+  },
+  {
+    id: "sec-trending-strip",
+    type: "trending_strip",
+    title: "Trending Visual Strip",
+    active: true,
+    order: 2,
+  },
+  {
+    id: "sec-featured-grid",
+    type: "product_grid",
+    title: "Featured Products",
+    subtitle: "Curated styles for the season",
+    filterType: "all",
+    viewAllLink: "/shop",
+    limit: 8,
+    active: true,
+    order: 3,
+  },
+  {
+    id: "sec-new-arrivals",
+    type: "product_rail",
+    title: "New Arrivals",
+    subtitle: "Explore the latest casual shirts and polos",
+    filterType: "new",
+    viewAllLink: "/shop?sort=newest",
+    limit: 8,
+    active: true,
+    order: 4,
+  },
+  {
+    id: "sec-lookbook",
+    type: "lookbook",
+    title: "Editorial Lookbook",
+    active: true,
+    order: 5,
+  },
+  {
+    id: "sec-promo",
+    type: "promo_banner",
+    title: "Flash Sale Promo Banner",
+    bannerHeading: "SUMMER CLEARANCE UP TO 40% OFF",
+    bannerSubtext: "Limited-edition tailoring, signature polos, and lightweight casual shirts.",
+    bannerCtaText: "EXPLORE SALE",
+    bannerCtaLink: "/shop?sale=true",
+    bannerBgTheme: "dark",
+    active: true,
+    order: 6,
+  },
+  {
+    id: "sec-trust",
+    type: "trust_row",
+    title: "Trust Badges & Guarantees",
+    active: true,
+    order: 7,
+  },
+];
+
 export async function seedFirestoreDatabase(): Promise<{ success: boolean; message: string }> {
   try {
     const batch = writeBatch(db);
 
     batch.set(doc(db, "settings", "announcement"), INITIAL_ANNOUNCEMENT);
+    batch.set(doc(db, "settings", "home_sections"), { sections: INITIAL_HOME_SECTIONS });
     for (const cat of INITIAL_CATEGORIES) {
       batch.set(doc(db, "categories", cat.id), cat);
     }
