@@ -32,9 +32,14 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({ slug }: ProductDetailClientProps) {
   const router = useRouter();
   const [productData, setProductData] = useState<Product | null>(() => {
+    if (typeof window !== "undefined") {
+      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+      const foundLocal = localCustom.find((p) => p.slug === slug || p.id === slug);
+      if (foundLocal) return foundLocal;
+    }
     return INITIAL_PRODUCTS.find((p) => p.slug === slug) || null;
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function loadFirestoreProduct() {

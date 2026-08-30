@@ -27,6 +27,18 @@ export default function HomePage() {
 
   useEffect(() => {
     async function loadData() {
+      // 1. Instant local sync
+      const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
+      const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
+      
+      let initialList: Product[] = [...localCustom];
+      for (const p of INITIAL_PRODUCTS) {
+        if (!initialList.some((item) => item.id === p.id)) {
+          initialList.push(p);
+        }
+      }
+      setProducts(initialList.filter((p) => !deletedIds.includes(p.id)));
+
       try {
         const bannerSnap = await getDocs(query(collection(db, "banners"), orderBy("order", "asc")));
         if (!bannerSnap.empty) {
@@ -44,17 +56,18 @@ export default function HomePage() {
           setLookbookItems(lbSnap.data().items);
         }
 
-        const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
-        const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
-        let allProds: Product[] = [...localCustom];
+        let allProds: Product[] = [...initialList];
 
         try {
-          const prodSnap = await getDocs(query(collection(db, "products"), limit(20)));
+          const prodSnap = await getDocs(query(collection(db, "products"), limit(50)));
           if (!prodSnap.empty) {
             const loadedProds = prodSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
             for (const p of loadedProds) {
-              if (!allProds.some((item) => item.id === p.id)) {
-                allProds.push(p);
+              const idx = allProds.findIndex((item) => item.id === p.id);
+              if (idx >= 0) {
+                allProds[idx] = p;
+              } else {
+                allProds.unshift(p);
               }
             }
           }
@@ -63,7 +76,7 @@ export default function HomePage() {
         const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
         setProducts(finalProds);
       } catch (err) {
-        setProducts([]);
+        // Keep baseline products intact
       } finally {
         setLoading(false);
       }

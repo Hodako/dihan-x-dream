@@ -51,11 +51,11 @@ export interface Product {
   isTrending: boolean;
   isNew: boolean;
   isFeatured?: boolean;
-  status: "published" | "draft" | "archived";
+  status?: "published" | "draft" | "archived";
   variants: ProductVariant[];
   fabricAndCare?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Category {

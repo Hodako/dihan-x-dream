@@ -16,7 +16,7 @@ import {
   Filter,
   Check,
 } from "lucide-react";
-import { INITIAL_CATEGORIES } from "@/lib/seedData";
+import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from "@/lib/seedData";
 import ProductCard from "@/components/storefront/ProductCard";
 import { Product, Category } from "@/types";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
@@ -30,8 +30,8 @@ const ITEMS_PER_PAGE = 12;
 
 export default function CategoryClient({ slug }: CategoryClientProps) {
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allProducts, setAllProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "discount">("newest");
   const [priceFilter, setPriceFilter] = useState<"all" | "under-1500" | "sale" | "in-stock">("all");
   const [gridCols, setGridCols] = useState<3 | 4>(4);
@@ -57,6 +57,12 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
       }
 
       let allProds: Product[] = [...localCustom];
+      for (const p of INITIAL_PRODUCTS) {
+        if (!allProds.some((item) => item.id === p.id)) {
+          allProds.push(p);
+        }
+      }
+      setAllProducts(allProds.filter((p) => !deletedIds.includes(p.id)));
 
       try {
         const catSnap = await getDoc(doc(db, "settings", "categories"));
@@ -68,8 +74,11 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         if (!prodSnap.empty) {
           prodSnap.forEach((d) => {
             const data = { id: d.id, ...d.data() } as Product;
-            if (!allProds.some((p) => p.id === data.id)) {
-              allProds.push(data);
+            const idx = allProds.findIndex((p) => p.id === data.id);
+            if (idx >= 0) {
+              allProds[idx] = data;
+            } else {
+              allProds.unshift(data);
             }
           });
         }

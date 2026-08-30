@@ -167,7 +167,464 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
   },
 ];
 
-export const INITIAL_PRODUCTS: Product[] = [];
+export const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: "df-prod-001",
+    title: "Signature Oxford Cotton Casual Shirt",
+    slug: "signature-oxford-cotton-casual-shirt",
+    category: "casual-shirts",
+    brand: "Dream Fashion Studio",
+    description: "Tailored from 100% premium long-staple combed cotton Oxford weave. Features a modern button-down collar, curved hemline, and breathable texture crafted for all-day comfort in tropical climates.",
+    fabricAndCare: "100% Combed Cotton. Machine wash cold with similar colors. Warm iron if needed.",
+    basePrice: 1850,
+    salePrice: 1650,
+    isNew: true,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["casual-shirts", "shirt", "men", "oxford", "featured", "trending"],
+    variants: [
+      {
+        color: "Navy Blue",
+        colorHex: "#1B2A4A",
+        size: "M",
+        sku: "DF-OXF-NV-M",
+        stock: 35,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Navy Blue",
+        colorHex: "#1B2A4A",
+        size: "L",
+        sku: "DF-OXF-NV-L",
+        stock: 28,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Navy Blue",
+        colorHex: "#1B2A4A",
+        size: "XL",
+        sku: "DF-OXF-NV-XL",
+        stock: 18,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-002",
+    title: "Classic Pique Knit Polo Shirt",
+    slug: "classic-pique-knit-polo-shirt",
+    category: "polos",
+    brand: "Dream Fashion Studio",
+    description: "Crafted from double-pique combed cotton with ribbed collar and twin-tipped cuffs. Finished with mother-of-pearl buttons and a reinforced side-vent hem for a timeless luxury silhouette.",
+    fabricAndCare: "95% Combed Cotton, 5% Elastane. Machine wash delicate. Do not tumble dry.",
+    basePrice: 1450,
+    salePrice: 1250,
+    isNew: false,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["polos", "polo", "men", "pique", "trending"],
+    variants: [
+      {
+        color: "Jet Black",
+        colorHex: "#111111",
+        size: "M",
+        sku: "DF-POLO-BK-M",
+        stock: 40,
+        images: [
+          "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Jet Black",
+        colorHex: "#111111",
+        size: "L",
+        sku: "DF-POLO-BK-L",
+        stock: 25,
+        images: [
+          "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-003",
+    title: "Relaxed Linen Blend Cuban Collar Shirt",
+    slug: "relaxed-linen-blend-cuban-collar-shirt",
+    category: "casual-shirts",
+    brand: "Dream Fashion Studio",
+    description: "Effortlessly breezy Cuban camp collar shirt woven with breathable French linen and soft viscose. Features a relaxed drape, clean front placket, and subtle chest pocket.",
+    fabricAndCare: "55% Linen, 45% Viscose. Hand wash cold or gentle machine wash.",
+    basePrice: 2150,
+    salePrice: 1890,
+    isNew: true,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["casual-shirts", "shirt", "linen", "cuban", "new"],
+    variants: [
+      {
+        color: "Sage Olive",
+        colorHex: "#556B2F",
+        size: "M",
+        sku: "DF-LIN-SG-M",
+        stock: 22,
+        images: [
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Sage Olive",
+        colorHex: "#556B2F",
+        size: "L",
+        sku: "DF-LIN-SG-L",
+        stock: 19,
+        images: [
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-004",
+    title: "Mercerized Royal Navy Polo",
+    slug: "mercerized-royal-navy-polo",
+    category: "polos",
+    brand: "Dream Fashion Studio",
+    description: "Silky mercerized cotton polo offering rich luster, deep color retention, and extreme softness against the skin. Designed with minimal tonal embroidery on the chest.",
+    fabricAndCare: "100% Mercerized Cotton. Machine wash inside out on delicate cycle.",
+    basePrice: 1750,
+    salePrice: 1490,
+    isNew: true,
+    isTrending: false,
+    isFeatured: true,
+    tags: ["polos", "polo", "mercerized", "navy", "featured"],
+    variants: [
+      {
+        color: "Royal Navy",
+        colorHex: "#002366",
+        size: "M",
+        sku: "DF-MRC-RN-M",
+        stock: 30,
+        images: [
+          "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Royal Navy",
+        colorHex: "#002366",
+        size: "L",
+        sku: "DF-MRC-RN-L",
+        stock: 20,
+        images: [
+          "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-005",
+    title: "Tailored Smart Stretch Chino Trousers",
+    slug: "tailored-smart-stretch-chino-trousers",
+    category: "pants",
+    brand: "Dream Fashion Studio",
+    description: "Versatile tailored chinos crafted with premium stretch twill cotton. Engineered with internal flex waistband, angled side pockets, and clean welt back pockets for sharp versatility.",
+    fabricAndCare: "98% Cotton, 2% Elastane. Machine wash cold, hang dry.",
+    basePrice: 1950,
+    salePrice: 1750,
+    isNew: false,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["pants", "chino", "men", "bottoms", "trending"],
+    variants: [
+      {
+        color: "Warm Khaki",
+        colorHex: "#C3B091",
+        size: "32",
+        sku: "DF-CHN-KH-32",
+        stock: 25,
+        images: [
+          "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Warm Khaki",
+        colorHex: "#C3B091",
+        size: "34",
+        sku: "DF-CHN-KH-34",
+        stock: 18,
+        images: [
+          "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-006",
+    title: "Vertical Stripe Summer Casual Shirt",
+    slug: "vertical-stripe-summer-casual-shirt",
+    category: "casual-shirts",
+    brand: "Dream Fashion Studio",
+    description: "Modern vertical candy stripe casual shirt tailored from lightweight poplin cotton. Features crisp point collar, French placket, and adjustable rounded barrel cuffs.",
+    fabricAndCare: "100% Cotton Poplin. Gentle wash. Easy iron.",
+    basePrice: 1650,
+    salePrice: 1450,
+    isNew: true,
+    isTrending: false,
+    isFeatured: true,
+    tags: ["casual-shirts", "shirt", "striped", "summer"],
+    variants: [
+      {
+        color: "Sky Blue Stripe",
+        colorHex: "#87CEEB",
+        size: "M",
+        sku: "DF-STRP-SB-M",
+        stock: 32,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Sky Blue Stripe",
+        colorHex: "#87CEEB",
+        size: "L",
+        sku: "DF-STRP-SB-L",
+        stock: 22,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-007",
+    title: "Heavyweight Textured Knit Polo",
+    slug: "heavyweight-textured-knit-polo",
+    category: "polos",
+    brand: "Dream Fashion Studio",
+    description: "Structured 280 GSM heavyweight waffle textured knit polo. Offers excellent drape, zero transparency, and a substantial modern silhouette that retains form wash after wash.",
+    fabricAndCare: "100% Heavyweight Combed Cotton. Machine wash cold.",
+    basePrice: 1650,
+    salePrice: undefined,
+    isNew: true,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["polos", "polo", "heavyweight", "textured", "trending"],
+    variants: [
+      {
+        color: "Forest Green",
+        colorHex: "#228B22",
+        size: "M",
+        sku: "DF-HVY-FG-M",
+        stock: 26,
+        images: [
+          "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Forest Green",
+        colorHex: "#228B22",
+        size: "L",
+        sku: "DF-HVY-FG-L",
+        stock: 15,
+        images: [
+          "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-008",
+    title: "Mandarin Collar Minimalist Shirt",
+    slug: "mandarin-collar-minimalist-shirt",
+    category: "casual-shirts",
+    brand: "Dream Fashion Studio",
+    description: "Contemporary grandad/mandarin band collar shirt in smooth yarn-dyed cotton. Clean, minimal aesthetics designed for both semi-formal gatherings and weekend leisure.",
+    fabricAndCare: "100% Yarn-Dyed Cotton. Hand wash or gentle machine cycle.",
+    basePrice: 1750,
+    salePrice: 1490,
+    isNew: false,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["casual-shirts", "shirt", "mandarin", "men"],
+    variants: [
+      {
+        color: "Burgundy Red",
+        colorHex: "#800020",
+        size: "M",
+        sku: "DF-MND-BG-M",
+        stock: 20,
+        images: [
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Burgundy Red",
+        colorHex: "#800020",
+        size: "L",
+        sku: "DF-MND-BG-L",
+        stock: 14,
+        images: [
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-009",
+    title: "Vintage Washed Indigo Denim Shirt",
+    slug: "vintage-washed-indigo-denim-shirt",
+    category: "casual-shirts",
+    brand: "Dream Fashion Studio",
+    description: "Mid-weight pure cotton indigo denim shirt with artisanal enzyme wash. Features pearlized snap buttons, double chest pockets, and durable western yoke detailing.",
+    fabricAndCare: "100% Denim Cotton. Wash inside out in cold water.",
+    basePrice: 2450,
+    salePrice: 2100,
+    isNew: true,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["casual-shirts", "denim", "indigo", "men", "featured"],
+    variants: [
+      {
+        color: "Vintage Indigo",
+        colorHex: "#4B0082",
+        size: "M",
+        sku: "DF-DNM-IN-M",
+        stock: 18,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Vintage Indigo",
+        colorHex: "#4B0082",
+        size: "L",
+        sku: "DF-DNM-IN-L",
+        stock: 12,
+        images: [
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-010",
+    title: "Contrast Collar Tip Polo",
+    slug: "contrast-collar-tip-polo",
+    category: "polos",
+    brand: "Dream Fashion Studio",
+    description: "Classic sporty polo crafted with contrast collar piping and premium stretch pique. Offers flexible movement and an athletic modern profile.",
+    fabricAndCare: "95% Cotton, 5% Spandex. Machine wash cold.",
+    basePrice: 1550,
+    salePrice: 1350,
+    isNew: false,
+    isTrending: false,
+    isFeatured: true,
+    tags: ["polos", "polo", "contrast", "men"],
+    variants: [
+      {
+        color: "Crisp White",
+        colorHex: "#FFFFFF",
+        size: "M",
+        sku: "DF-POLO-WH-M",
+        stock: 35,
+        images: [
+          "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Crisp White",
+        colorHex: "#FFFFFF",
+        size: "L",
+        sku: "DF-POLO-WH-L",
+        stock: 22,
+        images: [
+          "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-011",
+    title: "Executive Stretch Formal Trousers",
+    slug: "executive-stretch-formal-trousers",
+    category: "pants",
+    brand: "Dream Fashion Studio",
+    description: "Crease-resistant formal trousers engineered with subtle four-way stretch. Flat-front tailored silhouette with hidden coin pocket and premium curtain waistband.",
+    fabricAndCare: "65% Poly, 33% Rayon, 2% Spandex. Dry clean or gentle machine wash.",
+    basePrice: 2250,
+    salePrice: undefined,
+    isNew: false,
+    isTrending: false,
+    isFeatured: true,
+    tags: ["pants", "formal", "trousers", "men"],
+    variants: [
+      {
+        color: "Charcoal Grey",
+        colorHex: "#36454F",
+        size: "32",
+        sku: "DF-TRS-CG-32",
+        stock: 24,
+        images: [
+          "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "Charcoal Grey",
+        colorHex: "#36454F",
+        size: "34",
+        sku: "DF-TRS-CG-34",
+        stock: 19,
+        images: [
+          "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  },
+  {
+    id: "df-prod-012",
+    title: "Pure Cotton Windowpane Check Shirt",
+    slug: "pure-cotton-windowpane-check-shirt",
+    category: "casual-shirts",
+    brand: "Dream Fashion Studio",
+    description: "Subtle minimalist windowpane checked casual shirt tailored from smooth combed cotton. Perfect balance of boardroom sophistication and weekend comfort.",
+    fabricAndCare: "100% Combed Cotton. Machine wash warm, line dry.",
+    basePrice: 1950,
+    salePrice: 1690,
+    isNew: true,
+    isTrending: true,
+    isFeatured: true,
+    tags: ["casual-shirts", "shirt", "check", "men", "new"],
+    variants: [
+      {
+        color: "White & Navy Grid",
+        colorHex: "#F0F8FF",
+        size: "M",
+        sku: "DF-CHK-WN-M",
+        stock: 28,
+        images: [
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      },
+      {
+        color: "White & Navy Grid",
+        colorHex: "#F0F8FF",
+        size: "L",
+        sku: "DF-CHK-WN-L",
+        stock: 16,
+        images: [
+          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80"
+        ]
+      }
+    ]
+  }
+];
 
 
 export const INITIAL_LOGISTICS_SETTINGS: LogisticsSettings = {

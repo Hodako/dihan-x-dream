@@ -30,7 +30,7 @@ import { sanitizeForFirestore } from "@/lib/firestoreUtils";
 
 export default function AdminProductsPage() {
   const { addToast } = useUIStore();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
@@ -73,7 +73,13 @@ export default function AdminProductsPage() {
     async function loadProducts() {
       const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
       const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+      
       let allLoaded: Product[] = [...localCustom];
+      for (const p of INITIAL_PRODUCTS) {
+        if (!allLoaded.some((item) => item.id === p.id)) {
+          allLoaded.push(p);
+        }
+      }
 
       try {
         const snap = await getDocs(collection(db, "products"));
@@ -81,8 +87,11 @@ export default function AdminProductsPage() {
           const firestoreProds = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
           // Merge avoiding duplicates
           for (const fp of firestoreProds) {
-            if (!allLoaded.some((p) => p.id === fp.id)) {
-              allLoaded.push(fp);
+            const idx = allLoaded.findIndex((p) => p.id === fp.id);
+            if (idx >= 0) {
+              allLoaded[idx] = fp;
+            } else {
+              allLoaded.unshift(fp);
             }
           }
         }
