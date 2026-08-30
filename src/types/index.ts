@@ -256,6 +256,7 @@ export interface SpinnerSettings {
 
 export interface ThemeSettings {
   themeName: string;
+  category?: "luxury" | "minimal" | "vibrant" | "dark" | "custom";
   primaryColor: string;
   accentColor: string;
   accentSoftColor: string;
@@ -264,3 +265,32 @@ export interface ThemeSettings {
   fontHeading: string;
   fontBody: string;
 }
+
+export interface FooterLink {
+  label: string;
+  url: string;
+}
+
+export interface FooterSettings {
+  brandName: string;
+  brandTagline: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+  workingHours: string;
+  facebookUrl: string;
+  instagramUrl: string;
+  tiktokUrl: string;
+  youtubeUrl: string;
+  linkedinUrl: string;
+  copyrightText: string;
+  creatorName: string;
+  creatorUrl: string;
+  showPaymentIcons: boolean;
+  newsletterHeadline: string;
+  newsletterSubtext: string;
+  quickLinks: FooterLink[];
+  policyLinks: FooterLink[];
+}
+

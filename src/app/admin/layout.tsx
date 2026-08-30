@@ -27,6 +27,7 @@ import {
   Lock,
   LogOut,
   ArrowRight,
+  FileText,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUIStore } from "@/store/useUIStore";
@@ -61,6 +62,7 @@ export default function AdminLayout({
     { label: "Coupons", href: "/admin/coupons", icon: Tag },
     { label: "Lucky Spinner", href: "/admin/spinner", icon: Sparkles },
     { label: "Theme & UI", href: "/admin/theme", icon: Palette },
+    { label: "Footer Info", href: "/admin/footer", icon: FileText },
     { label: "Reviews", href: "/admin/reviews", icon: Star },
     { label: "Users & Access", href: "/admin/users", icon: Users },
   ];

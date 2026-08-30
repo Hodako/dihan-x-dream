@@ -1,4 +1,4 @@
-import { Product, Category, BannerSlide, LookbookItem, TrendingTile, LogisticsSettings, DeliveryZone, Coupon, AnnouncementSettings } from '@/types';
+import { Product, Category, BannerSlide, LookbookItem, TrendingTile, LogisticsSettings, DeliveryZone, Coupon, AnnouncementSettings, FooterSettings } from '@/types';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -6,6 +6,42 @@ export const INITIAL_ANNOUNCEMENT: AnnouncementSettings = {
   enabled: false,
   text: "BUY LESS, CHOOSE WELL",
 };
+
+export const INITIAL_FOOTER_SETTINGS: FooterSettings = {
+  brandName: "Dream Fashion",
+  brandTagline: "Modern trend-forward fashion platform for Bangladesh. Premium casual shirts, polos, contemporary tailoring, and nationwide doorstep delivery.",
+  phone: "+880 1700-000000",
+  whatsapp: "+880 1700-000000",
+  email: "support@dreamfashion.com.bd",
+  address: "House 12, Road 4, Sector 3, Uttara, Dhaka - 1230, Bangladesh",
+  workingHours: "Saturday – Thursday: 10:00 AM – 9:00 PM (Friday Closed)",
+  facebookUrl: "https://facebook.com/hodako17",
+  instagramUrl: "https://instagram.com",
+  tiktokUrl: "https://tiktok.com",
+  youtubeUrl: "https://youtube.com",
+  linkedinUrl: "https://linkedin.com",
+  copyrightText: "© 2026 Dream Fashion Bangladesh. All rights reserved.",
+  creatorName: "Azizul Hakim Khan",
+  creatorUrl: "https://facebook.com/hodako17",
+  showPaymentIcons: true,
+  newsletterHeadline: "JOIN THE DREAM CLUB",
+  newsletterSubtext: "Subscribe to receive exclusive drop alerts, private lookbooks, and 10% off your first online order.",
+  quickLinks: [
+    { label: "Home", url: "/" },
+    { label: "Casual Shirts", url: "/category/casual-shirts" },
+    { label: "Polo Shirts", url: "/category/polos" },
+    { label: "Men's Collection", url: "/category/men" },
+    { label: "Shop All", url: "/shop" },
+  ],
+  policyLinks: [
+    { label: "Track Your Order", url: "/track-order" },
+    { label: "Delivery & Shipping", url: "/shipping" },
+    { label: "Returns & Exchanges", url: "/returns" },
+    { label: "Privacy Policy", url: "/privacy" },
+    { label: "Terms of Service", url: "/terms" },
+  ],
+};
+
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
