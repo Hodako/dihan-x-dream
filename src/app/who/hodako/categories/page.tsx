@@ -288,7 +288,7 @@ export default function AdminCategoriesPage() {
           </button>
           <button
             onClick={handleOpenCreate}
-            className="px-5 py-2.5 bg-admin-accent hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
+            className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Category</span>
@@ -580,7 +580,7 @@ export default function AdminCategoriesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-ink-900 hover:bg-black text-white rounded-xl font-bold uppercase transition-all shadow-sm"
+                  className="px-6 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black rounded-xl font-black uppercase transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   Save Category
                 </button>

@@ -171,6 +171,7 @@ export interface LogisticsSettings {
   mode: "global" | "area";
   globalInsideDhaka: number;
   globalOutsideDhaka: number;
+  freeDeliveryThreshold?: number;
   paymentMethods: {
     cod: boolean;
     partial: boolean;

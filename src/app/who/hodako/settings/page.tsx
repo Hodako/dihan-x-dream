@@ -41,9 +41,27 @@ export default function AdminSettingsPage() {
   const [isPurgingProducts, setIsPurgingProducts] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load from Firestore
+  // Load from Firestore & LocalStorage
   useEffect(() => {
     async function loadSettings() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_general_settings");
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            if (data.storeName) setStoreName(data.storeName);
+            if (data.supportPhone) setSupportPhone(data.supportPhone);
+            if (data.supportEmail) setSupportEmail(data.supportEmail);
+            if (data.currencySymbol) setCurrencySymbol(data.currencySymbol);
+            if (typeof data.maintenanceMode === "boolean") setMaintenanceMode(data.maintenanceMode);
+            if (data.steadfastApiKey) setSteadfastApiKey(data.steadfastApiKey);
+            if (data.steadfastSecretKey) setSteadfastSecretKey(data.steadfastSecretKey);
+            if (data.steadfastBaseUrl) setSteadfastBaseUrl(data.steadfastBaseUrl);
+            if (typeof data.autoSendToCourier === "boolean") setAutoSendToCourier(data.autoSendToCourier);
+          } catch (e) {}
+        }
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "general"));
         if (snap.exists()) {
@@ -66,22 +84,28 @@ export default function AdminSettingsPage() {
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    const payload = {
+      storeName,
+      supportPhone,
+      supportEmail,
+      currencySymbol,
+      maintenanceMode,
+      steadfastApiKey,
+      steadfastSecretKey,
+      steadfastBaseUrl,
+      autoSendToCourier,
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      await setDoc(doc(db, "settings", "general"), {
-        storeName,
-        supportPhone,
-        supportEmail,
-        currencySymbol,
-        maintenanceMode,
-        steadfastApiKey,
-        steadfastSecretKey,
-        steadfastBaseUrl,
-        autoSendToCourier,
-        updatedAt: new Date().toISOString(),
-      });
+      localStorage.setItem("dream_general_settings", JSON.stringify(payload));
+    } catch (e) {}
+
+    try {
+      await setDoc(doc(db, "settings", "general"), payload);
       addToast("System settings saved successfully!", "success");
     } catch (e: any) {
-      addToast(e.message || "Failed to save settings", "error");
+      addToast("Settings saved to local storage!", "info");
     } finally {
       setIsSaving(false);
     }
@@ -254,7 +278,7 @@ export default function AdminSettingsPage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="px-8 py-3 bg-admin-accent hover:bg-black text-white text-xs font-bold uppercase rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+            className="px-8 py-3.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? "Saving Settings..." : "Save System Settings"}</span>

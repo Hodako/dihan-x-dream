@@ -28,6 +28,7 @@ import {
   BdUpazila,
   BdUnion,
   DeliveryZone,
+  LogisticsSettings,
   Order,
   PaymentMethod,
   Coupon,
@@ -50,7 +51,7 @@ import {
   generateOrderNumber,
   cn,
 } from "@/lib/utils";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createDirectBkashSession } from "@/lib/bkashClient";
 
@@ -90,17 +91,53 @@ export default function CheckoutPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>(INITIAL_DELIVERY_ZONES);
+  const [logisticsSettings, setSettingsState] = useState<LogisticsSettings & {
+    paymentTitles?: {
+      cod: string;
+      codSub: string;
+      partial: string;
+      partialSub: string;
+      bkash: string;
+      bkashSub: string;
+      bkashNumber: string;
+    };
+  }>(INITIAL_LOGISTICS_SETTINGS);
+
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponError, setCouponError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Initial Mount & LocalStorage Auto-Fill
+  // 1. Initial Mount, LocalStorage Auto-Fill & Logistics settings
   useEffect(() => {
     setMounted(true);
     const divs = getDivisions();
     setDivisions(divs);
+
+    // Fetch dynamic logistics settings & payment methods
+    async function loadDynamicLogistics() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_logistics_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed.settings) setSettingsState(parsed.settings);
+            if (parsed.zones) setDeliveryZones(parsed.zones);
+          } catch (e) {}
+        }
+      }
+
+      try {
+        const snap = await getDoc(doc(db, "settings", "logistics"));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.settings) setSettingsState(data.settings);
+          if (data.zones) setDeliveryZones(data.zones);
+        }
+      } catch (e) {}
+    }
+    loadDynamicLogistics();
 
     // Auto-fill from localStorage if customer entered previously
     try {
@@ -109,7 +146,6 @@ export default function CheckoutPage() {
         const parsed = JSON.parse(savedData);
         if (parsed.name) setCustomerName(parsed.name);
         if (parsed.phone) setCustomerPhone(parsed.phone);
-        if (parsed.email) setCustomerEmail(parsed.email);
         if (parsed.divisionId) {
           setSelectedDivisionId(parsed.divisionId);
           const dists = getDistrictsByDivision(parsed.divisionId);
@@ -274,12 +310,13 @@ export default function CheckoutPage() {
         upazilaId: selectedUpazilaId,
         unionId: selectedUnionId,
       },
-      INITIAL_LOGISTICS_SETTINGS,
+      logisticsSettings,
       deliveryZones
     );
-  }, [selectedDivisionId, selectedDistrictId, selectedUpazilaId, selectedUnionId, deliveryZones]);
+  }, [selectedDivisionId, selectedDistrictId, selectedUpazilaId, selectedUnionId, logisticsSettings, deliveryZones]);
 
-  const isFreeDelivery = resolvedDelivery.charge === 0 || subtotal >= 2500;
+  const freeThreshold = logisticsSettings.freeDeliveryThreshold ?? 2500;
+  const isFreeDelivery = resolvedDelivery.charge === 0 || (freeThreshold > 0 && subtotal >= freeThreshold);
   const effectiveDeliveryFee = isFreeDelivery ? 0 : resolvedDelivery.charge;
 
   const discountAmount = useMemo(() => {
@@ -296,12 +333,31 @@ export default function CheckoutPage() {
   const grandTotal = Math.max(0, subtotal - discountAmount + effectiveDeliveryFee);
 
   const { partialAdvanceAmount, partialDueAmount } = useMemo(() => {
-    const splits = computePaymentSplits("partial", grandTotal, INITIAL_LOGISTICS_SETTINGS);
+    const splits = computePaymentSplits("partial", grandTotal, logisticsSettings);
     return {
       partialAdvanceAmount: splits.advancePaid,
       partialDueAmount: splits.remainingDue,
     };
-  }, [grandTotal]);
+  }, [grandTotal, logisticsSettings]);
+
+  // Payment methods availability
+  const isCodAvailable = logisticsSettings.paymentMethods?.cod !== false;
+  const isPartialAvailable = logisticsSettings.paymentMethods?.partial !== false;
+  const isFullAvailable = logisticsSettings.paymentMethods?.full !== false;
+
+  // Auto-switch payment method if current is disabled by admin
+  useEffect(() => {
+    if (paymentMethod === "cod" && !isCodAvailable) {
+      if (isPartialAvailable) setPaymentMethod("partial");
+      else if (isFullAvailable) setPaymentMethod("bkash");
+    } else if (paymentMethod === "partial" && !isPartialAvailable) {
+      if (isCodAvailable) setPaymentMethod("cod");
+      else if (isFullAvailable) setPaymentMethod("bkash");
+    } else if (paymentMethod === "bkash" && !isFullAvailable) {
+      if (isCodAvailable) setPaymentMethod("cod");
+      else if (isPartialAvailable) setPaymentMethod("partial");
+    }
+  }, [isCodAvailable, isPartialAvailable, isFullAvailable, paymentMethod]);
 
   // Google Quick Fill
   const handleGoogleQuickFill = async () => {
@@ -640,7 +696,7 @@ export default function CheckoutPage() {
                   placeholder="e.g. Asif Mahmud"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-bg-subtle border border-line-200 rounded-lg focus:outline-none focus:border-ink-900"
+                  className="w-full text-xs p-2.5 bg-bg-subtle border border-line-200 rounded-lg focus:outline-none focus:border-ink-900 font-semibold"
                 />
               </div>
 
@@ -655,19 +711,6 @@ export default function CheckoutPage() {
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full text-xs p-2.5 bg-bg-subtle border border-line-200 rounded-lg focus:outline-none focus:border-ink-900 font-mono font-semibold"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block font-semibold uppercase text-ink-700 mb-1 text-[11px]">
-                  Email Address (For order receipts)
-                </label>
-                <input
-                  type="email"
-                  placeholder="name@example.com (optional)"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-bg-subtle border border-line-200 rounded-lg focus:outline-none focus:border-ink-900"
                 />
               </div>
             </div>
@@ -863,121 +906,134 @@ export default function CheckoutPage() {
 
               <div className="space-y-2.5">
                 {/* Option 1: Cash On Delivery */}
-                <label
-                  className={cn(
-                    "flex items-center gap-3 py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer select-none",
-                    paymentMethod === "cod"
-                      ? "border-ink-900 bg-bg-subtle/80 shadow-2xs ring-1 ring-ink-900/10"
-                      : "border-line-200 hover:border-ink-400 bg-white"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="cod"
-                    checked={paymentMethod === "cod"}
-                    onChange={() => setPaymentMethod("cod")}
-                    className="w-4 h-4 accent-ink-900 flex-shrink-0 cursor-pointer"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src="/images/payments/cod.png"
-                          alt="Cash On Delivery"
-                          className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
-                        />
-                        <span className="text-xs sm:text-sm font-bold uppercase text-ink-900">
-                          Cash On Delivery
+                {isCodAvailable && (
+                  <label
+                    className={cn(
+                      "flex items-center gap-3 py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer select-none",
+                      paymentMethod === "cod"
+                        ? "border-ink-900 bg-bg-subtle/80 shadow-2xs ring-1 ring-ink-900/10"
+                        : "border-line-200 hover:border-ink-400 bg-white"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="cod"
+                      checked={paymentMethod === "cod"}
+                      onChange={() => setPaymentMethod("cod")}
+                      className="w-4 h-4 accent-ink-900 flex-shrink-0 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src="/images/payments/cod.png"
+                            alt="Cash On Delivery"
+                            className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
+                          />
+                          <span className="text-xs sm:text-sm font-bold uppercase text-ink-900">
+                            {logisticsSettings.paymentTitles?.cod || "Cash On Delivery"}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-ink-900 font-sans flex-shrink-0">
+                          {formatPrice(grandTotal)}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-bold text-ink-900 font-sans flex-shrink-0">
-                        {formatPrice(grandTotal)}
-                      </span>
+                      <p className="text-[10px] sm:text-[11px] text-ink-500 mt-0.5">
+                        {logisticsSettings.paymentTitles?.codSub || "Pay total cash upon receiving parcel."}
+                      </p>
                     </div>
-                    <p className="text-[10px] sm:text-[11px] text-ink-500 mt-0.5">
-                      Pay total cash upon receiving parcel.
-                    </p>
-                  </div>
-                </label>
+                  </label>
+                )}
 
                 {/* Option 2: Pay Delivery Charge */}
-                <label
-                  className={cn(
-                    "flex items-center gap-3 py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer select-none",
-                    paymentMethod === "partial"
-                      ? "border-accent-gold bg-amber-50/40 shadow-2xs ring-1 ring-accent-gold/20"
-                      : "border-line-200 hover:border-amber-400 bg-white"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="partial"
-                    checked={paymentMethod === "partial"}
-                    onChange={() => setPaymentMethod("partial")}
-                    className="w-4 h-4 accent-accent-gold flex-shrink-0 cursor-pointer"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src="/images/payments/only-bkash-icon.svg"
-                          alt="bKash"
-                          className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
-                        />
-                        <span className="text-xs sm:text-sm font-bold uppercase text-amber-950">
-                          Pay Delivery Charge (Advance)
+                {isPartialAvailable && (
+                  <label
+                    className={cn(
+                      "flex items-center gap-3 py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer select-none",
+                      paymentMethod === "partial"
+                        ? "border-accent-gold bg-amber-50/40 shadow-2xs ring-1 ring-accent-gold/20"
+                        : "border-line-200 hover:border-amber-400 bg-white"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="partial"
+                      checked={paymentMethod === "partial"}
+                      onChange={() => setPaymentMethod("partial")}
+                      className="w-4 h-4 accent-accent-gold flex-shrink-0 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src="/images/payments/only-bkash-icon.svg"
+                            alt="bKash"
+                            className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
+                          />
+                          <span className="text-xs sm:text-sm font-bold uppercase text-amber-950">
+                            {logisticsSettings.paymentTitles?.partial || "Pay Delivery Charge (Advance)"}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-amber-900 font-sans flex-shrink-0">
+                          {formatPrice(effectiveDeliveryFee)}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-bold text-amber-900 font-sans flex-shrink-0">
-                        {formatPrice(effectiveDeliveryFee)}
-                      </span>
+                      <p className="text-[10px] sm:text-[11px] text-ink-600 mt-0.5">
+                        {logisticsSettings.paymentTitles?.partialSub || `Pay delivery fee now via bKash, remaining ${formatPrice(subtotal - discountAmount)} on delivery.`}
+                      </p>
                     </div>
-                    <p className="text-[10px] sm:text-[11px] text-ink-600 mt-0.5">
-                      Pay delivery fee now via bKash, remaining {formatPrice(subtotal - discountAmount)} on delivery.
-                    </p>
-                  </div>
-                </label>
+                  </label>
+                )}
 
                 {/* Option 3: Full Payment */}
-                <label
-                  className={cn(
-                    "flex items-center gap-3 py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer select-none",
-                    paymentMethod === "bkash"
-                      ? "border-pink-600 bg-pink-50/40 shadow-2xs ring-1 ring-pink-600/20"
-                      : "border-line-200 hover:border-pink-300 bg-white"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="bkash"
-                    checked={paymentMethod === "bkash"}
-                    onChange={() => setPaymentMethod("bkash")}
-                    className="w-4 h-4 accent-pink-600 flex-shrink-0 cursor-pointer"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src="/images/payments/bkash.svg"
-                          alt="bKash"
-                          className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
-                        />
-                        <span className="text-xs sm:text-sm font-bold uppercase text-pink-700">
-                          Full bKash Payment
+                {isFullAvailable && (
+                  <label
+                    className={cn(
+                      "flex items-center gap-3 py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer select-none",
+                      paymentMethod === "bkash"
+                        ? "border-pink-600 bg-pink-50/40 shadow-2xs ring-1 ring-pink-600/20"
+                        : "border-line-200 hover:border-pink-300 bg-white"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="bkash"
+                      checked={paymentMethod === "bkash"}
+                      onChange={() => setPaymentMethod("bkash")}
+                      className="w-4 h-4 accent-pink-600 flex-shrink-0 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src="/images/payments/bkash.svg"
+                            alt="bKash"
+                            className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
+                          />
+                          <span className="text-xs sm:text-sm font-bold uppercase text-pink-700">
+                            {logisticsSettings.paymentTitles?.bkash || "Full bKash Payment"}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-pink-700 font-sans flex-shrink-0">
+                          {formatPrice(grandTotal)}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-bold text-pink-700 font-sans flex-shrink-0">
-                        {formatPrice(grandTotal)}
-                      </span>
+                      <p className="text-[10px] sm:text-[11px] text-ink-600 mt-0.5">
+                        {logisticsSettings.paymentTitles?.bkashSub || "Pay complete total via bKash for priority dispatch."}
+                      </p>
                     </div>
-                    <p className="text-[10px] sm:text-[11px] text-ink-600 mt-0.5">
-                      Pay complete total via bKash for priority dispatch.
-                    </p>
+                  </label>
+                )}
+
+                {/* Fallback if all methods disabled */}
+                {!isCodAvailable && !isPartialAvailable && !isFullAvailable && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold">
+                    Payment methods are undergoing maintenance. Please contact hotline to complete your order.
                   </div>
-                </label>
+                )}
               </div>
             </div>
           </div>

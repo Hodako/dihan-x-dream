@@ -82,9 +82,20 @@ export default function AdminLogisticsPage() {
     resetGeo,
   } = useBdGeo();
 
-  // Load from Firestore on mount
+  // Load from Firestore & LocalStorage on mount
   useEffect(() => {
     async function loadLogistics() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_logistics_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed.settings) setSettings(parsed.settings);
+            if (parsed.zones) setZones(parsed.zones);
+          } catch (e) {}
+        }
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "logistics"));
         if (snap.exists()) {
@@ -100,6 +111,10 @@ export default function AdminLogisticsPage() {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
+      localStorage.setItem("dream_logistics_settings", JSON.stringify({ settings, zones }));
+    } catch (e) {}
+
+    try {
       await setDoc(doc(db, "settings", "logistics"), {
         settings,
         zones,
@@ -107,7 +122,7 @@ export default function AdminLogisticsPage() {
       });
       addToast("Logistics & payment settings saved & synced to live store!", "success");
     } catch (e) {
-      addToast("Settings saved locally", "info");
+      addToast("Settings saved to local cache", "info");
     } finally {
       setIsSaving(false);
     }
@@ -167,9 +182,9 @@ export default function AdminLogisticsPage() {
         <button
           onClick={handleSaveSettings}
           disabled={isSaving}
-          className="px-5 py-2.5 bg-admin-accent hover:bg-admin-accent-hover text-white text-xs font-bold uppercase tracking-wider rounded flex items-center justify-center gap-2 transition-colors shadow-sm self-start"
+          className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer self-start"
         >
-          {isSaving ? <span className="df-spinner df-spinner--sm" /> : <Save className="w-4 h-4" />}
+          {isSaving ? <span className="df-spinner df-spinner--dark df-spinner--sm" /> : <Save className="w-4 h-4" />}
           <span>Save Changes</span>
         </button>
       </div>

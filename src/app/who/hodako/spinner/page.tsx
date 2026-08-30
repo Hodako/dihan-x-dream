@@ -42,9 +42,24 @@ export default function AdminSpinnerPage() {
   const [sliceIsTryAgain, setSliceIsTryAgain] = useState(false);
   const [sliceQuota, setSliceQuota] = useState(500);
 
-  // Load from Firestore
+  // Load from Firestore & LocalStorage
   useEffect(() => {
     async function loadConfig() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_spinner_settings");
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            if (data.enabled !== undefined) setEnabled(data.enabled);
+            if (data.maxSpinsPerUser) setMaxSpinsPerUser(data.maxSpinsPerUser);
+            if (data.maxDiscountCap) setMaxDiscountCap(data.maxDiscountCap);
+            if (data.title) setTitle(data.title);
+            if (data.subtitle) setSubtitle(data.subtitle);
+            if (data.slices && data.slices.length > 0) setSlices(data.slices);
+          } catch (e) {}
+        }
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "spinner"));
         if (snap.exists()) {
@@ -93,56 +108,76 @@ export default function AdminSpinnerPage() {
     e.preventDefault();
     if (!sliceLabel.trim()) return;
 
-    const newSlice: SpinnerSlice = {
-      id: editingSlice ? editingSlice.id : `slice_${Date.now()}`,
-      label: sliceLabel.trim().toUpperCase(),
-      prefix: slicePrefix.trim().toUpperCase() || "DF",
-      discountText: sliceDiscountText.trim() || sliceLabel,
-      discountType: sliceType,
-      discountValue: Number(sliceValue),
-      color: sliceColor,
-      textColor: sliceTextColor,
-      isTryAgain: sliceIsTryAgain,
-      quota: Number(sliceQuota),
-      wonCount: editingSlice?.wonCount || 0,
-    };
-
     if (editingSlice) {
-      setSlices(slices.map((s) => (s.id === editingSlice.id ? newSlice : s)));
-      addToast(`Updated slice "${newSlice.label}"`, "success");
+      setSlices(
+        slices.map((s) =>
+          s.id === editingSlice.id
+            ? {
+                ...s,
+                label: sliceLabel,
+                prefix: slicePrefix,
+                discountText: sliceDiscountText,
+                discountType: sliceType,
+                discountValue: Number(sliceValue),
+                color: sliceColor,
+                textColor: sliceTextColor,
+                isTryAgain: sliceIsTryAgain,
+                quota: Number(sliceQuota),
+              }
+            : s
+        )
+      );
+      addToast("Slice updated in local layout", "info");
     } else {
+      const newSlice: SpinnerSlice = {
+        id: `slice_${Date.now()}`,
+        label: sliceLabel,
+        prefix: slicePrefix,
+        discountText: sliceDiscountText,
+        discountType: sliceType,
+        discountValue: Number(sliceValue),
+        color: sliceColor,
+        textColor: sliceTextColor,
+        isTryAgain: sliceIsTryAgain,
+        quota: Number(sliceQuota),
+        wonCount: 0,
+      };
       setSlices([...slices, newSlice]);
-      addToast(`Added new slice "${newSlice.label}"`, "success");
+      addToast("New slice added! Remember to click Save & Sync.", "info");
     }
 
     setIsModalOpen(false);
   };
 
   const handleDeleteSlice = (id: string) => {
-    if (slices.length <= 2) {
-      addToast("The wheel must have at least 2 slices", "warning");
+    if (slices.length <= 4) {
+      addToast("Spinner must have at least 4 slices for geometric balance", "warning");
       return;
     }
     setSlices(slices.filter((s) => s.id !== id));
-    addToast("Slice removed", "info");
+    addToast("Slice removed. Click Save & Sync to apply.", "info");
   };
 
   const handleSaveAllSettings = async () => {
     setIsSaving(true);
-    try {
-      const payload: SpinnerSettings = {
-        enabled,
-        maxSpinsPerUser: Number(maxSpinsPerUser),
-        maxDiscountCap: Number(maxDiscountCap),
-        title,
-        subtitle,
-        slices,
-      };
+    const payload: SpinnerSettings = {
+      enabled,
+      maxSpinsPerUser: Number(maxSpinsPerUser),
+      maxDiscountCap: Number(maxDiscountCap),
+      title,
+      subtitle,
+      slices,
+    };
 
+    try {
+      localStorage.setItem("dream_spinner_settings", JSON.stringify(payload));
+    } catch (e) {}
+
+    try {
       await setDoc(doc(db, "settings", "spinner"), payload);
       addToast("Lucky Spinner configuration saved & synced to live store!", "success");
     } catch (e: any) {
-      addToast(e.message || "Failed to save settings", "error");
+      addToast("Settings cached locally", "info");
     } finally {
       setIsSaving(false);
     }
@@ -153,6 +188,14 @@ export default function AdminSpinnerPage() {
     setMaxSpinsPerUser(3);
     setMaxDiscountCap(1000);
     setEnabled(true);
+    try {
+      localStorage.setItem("dream_spinner_settings", JSON.stringify({
+        enabled: true,
+        maxSpinsPerUser: 3,
+        maxDiscountCap: 1000,
+        slices: INITIAL_ADMIN_SLICES,
+      }));
+    } catch (e) {}
     addToast("Reset to default spinner settings.", "info");
   };
 
@@ -173,7 +216,7 @@ export default function AdminSpinnerPage() {
           <button
             type="button"
             onClick={handleResetDefaults}
-            className="px-4 py-2.5 bg-line-200 text-admin-text-primary-light hover:bg-line-300 rounded-lg text-xs font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 bg-line-200 text-admin-text-primary-light hover:bg-line-300 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Reset Defaults</span>
@@ -182,7 +225,7 @@ export default function AdminSpinnerPage() {
             type="button"
             onClick={handleSaveAllSettings}
             disabled={isSaving}
-            className="px-5 py-2.5 bg-admin-accent hover:bg-admin-accent-hover text-white text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+            className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? "Saving..." : "Save & Sync Spinner"}</span>

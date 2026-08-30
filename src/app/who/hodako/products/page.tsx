@@ -331,7 +331,7 @@ export default function AdminProductsPage() {
         <div className="flex flex-wrap items-center gap-2 self-start">
           <button
             onClick={handleOpenCreateModal}
-            className="px-5 py-2.5 bg-admin-accent hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+            className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>+ Add New Product</span>
@@ -758,7 +758,7 @@ export default function AdminProductsPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-admin-accent hover:bg-admin-accent-hover text-white font-bold uppercase rounded tracking-wider transition-colors shadow-md text-xs"
+                className="w-full py-3.5 bg-[#FFB900] hover:bg-[#E5A700] text-black font-black uppercase rounded-xl tracking-wider transition-all shadow-md active:scale-95 text-xs cursor-pointer"
               >
                 {editingProduct ? "SAVE PRODUCT EDITS" : "PUBLISH PRODUCT TO LIVE STORE"}
               </button>
