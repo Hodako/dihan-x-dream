@@ -1,0 +1,220 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Search, ShoppingBag, Menu, X, User } from "lucide-react";
+import { useCartStore } from "@/store/useCartStore";
+import { useUIStore } from "@/store/useUIStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { AnnouncementSettings, Category } from "@/types";
+import { INITIAL_ANNOUNCEMENT, INITIAL_CATEGORIES } from "@/lib/seedData";
+import { cn } from "@/lib/utils";
+
+export default function Header() {
+  const pathname = usePathname();
+  const { getTotalItems } = useCartStore();
+  const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu, openSearch } = useUIStore();
+  const { user } = useAuthStore();
+
+  const [mounted, setMounted] = useState(false);
+  const [announcement, setAnnouncement] = useState<AnnouncementSettings>(INITIAL_ANNOUNCEMENT);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [headerCategorySlugs, setHeaderCategorySlugs] = useState<string[]>([
+    "casual-shirts",
+    "polos",
+    "men",
+  ]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const totalCartCount = mounted ? getTotalItems() : 0;
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Announcement
+        const annSnap = await getDoc(doc(db, "settings", "announcement"));
+        if (annSnap.exists()) {
+          setAnnouncement(annSnap.data() as AnnouncementSettings);
+        }
+
+        // Header Categories
+        const catSnap = await getDoc(doc(db, "settings", "categories"));
+        if (catSnap.exists()) {
+          const data = catSnap.data();
+          if (data.categories && data.categories.length > 0) setCategories(data.categories);
+          if (data.headerCategories) setHeaderCategorySlugs(data.headerCategories);
+        }
+      } catch (e) {}
+    }
+    loadData();
+  }, []);
+
+  // Filter top nav categories based on admin configuration
+  const activeHeaderCategories = categories.filter((c) =>
+    headerCategorySlugs.includes(c.slug)
+  );
+
+  // Sub-category strip on category pages
+  const isCheckoutOrProduct =
+    pathname?.startsWith("/checkout") ||
+    pathname?.startsWith("/product") ||
+    pathname?.startsWith("/order-confirmation");
+
+  return (
+    <>
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white">
+        {/* Optional Top Announcement Bar */}
+        {announcement.enabled && announcement.text && (
+          <div className="bg-[#0A0A0A] text-white text-[10px] sm:text-[11px] font-medium tracking-wider text-center py-1 px-4">
+            {announcement.text}
+          </div>
+        )}
+
+        {/* Main Header Bar */}
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-1.5 pb-0.5 sm:pt-2 sm:pb-1">
+          <div className="bg-[#0E0E0E] text-white rounded-xl sm:rounded-full px-3 sm:px-6 h-11 sm:h-14 flex items-center justify-between shadow-md">
+            {/* Left: Mobile Hamburger / Brand Logo */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="lg:hidden p-1 text-white hover:text-gray-300 focus:outline-none cursor-pointer"
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />}
+              </button>
+
+              <Link href="/" className="inline-block group">
+                <span className="font-heading text-base sm:text-2xl font-black tracking-[0.06em] uppercase text-white block">
+                  Dream Fashion
+                </span>
+              </Link>
+            </div>
+
+            {/* Center Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-6 text-[13px] font-medium tracking-wide">
+              <Link href="/" className="text-gray-200 hover:text-white transition-colors">
+                Home
+              </Link>
+              {activeHeaderCategories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/category/${cat.slug}`}
+                  className="text-gray-200 hover:text-white transition-colors uppercase text-xs tracking-wider"
+                >
+                  {cat.name}
+                </Link>
+              ))}
+              <Link href="/shop" className="text-gray-200 hover:text-white transition-colors">
+                Shop All
+              </Link>
+            </nav>
+
+            {/* Right: Search, Account, Cart */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button
+                onClick={openSearch}
+                className="p-1 sm:p-1.5 text-white hover:text-gray-300 transition-colors cursor-pointer"
+                aria-label="Search"
+              >
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+              </button>
+
+              <Link
+                href="/account"
+                className="p-1 sm:p-1.5 text-white hover:text-gray-300 transition-colors hidden sm:inline-block"
+                aria-label="User Account"
+              >
+                <User className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
+              </Link>
+
+              {/* Shopping Bag Button */}
+              <Link
+                href="/checkout"
+                className="flex items-center gap-1.5 bg-white text-[#0E0E0E] hover:bg-gray-100 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-transform active:scale-95 shadow-sm"
+                aria-label="Shopping Bag"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                <span className="font-heading font-black">{totalCartCount}</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Drawer Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={closeMobileMenu} />
+          <div className="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-white shadow-2xl flex flex-col justify-between z-50">
+            <div className="p-4 sm:p-6 overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-line-200">
+                <span className="font-heading text-lg font-black uppercase tracking-wider text-ink-900">
+                  Dream Fashion
+                </span>
+                <button
+                  onClick={closeMobileMenu}
+                  className="p-1 text-ink-500 hover:text-ink-900 cursor-pointer"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-col space-y-2.5">
+                <Link
+                  href="/"
+                  onClick={closeMobileMenu}
+                  className="text-xs font-bold py-1.5 border-b border-line-100 text-ink-900 uppercase"
+                >
+                  HOME
+                </Link>
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}`}
+                    onClick={closeMobileMenu}
+                    className="text-xs font-bold py-1.5 border-b border-line-100 text-ink-900 uppercase"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+                <Link
+                  href="/shop"
+                  onClick={closeMobileMenu}
+                  className="text-xs font-bold py-1.5 border-b border-line-100 text-ink-900 uppercase"
+                >
+                  ALL COLLECTIONS
+                </Link>
+                <Link
+                  href="/account"
+                  onClick={closeMobileMenu}
+                  className="text-xs font-semibold py-1.5 text-ink-700 uppercase flex items-center gap-1.5"
+                >
+                  <User className="w-3.5 h-3.5" /> My Account
+                </Link>
+                <Link
+                  href="/track-order"
+                  onClick={closeMobileMenu}
+                  className="text-xs font-semibold py-1.5 text-ink-700 uppercase"
+                >
+                  Track Order
+                </Link>
+              </div>
+            </div>
+
+            <div className="p-4 bg-bg-subtle border-t border-line-200 text-[11px] text-ink-500 space-y-0.5">
+              <p className="font-semibold text-ink-900">Dream Fashion Bangladesh</p>
+              <p>Hotline: +880 1700-000000</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

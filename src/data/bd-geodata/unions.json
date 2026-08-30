@@ -1,0 +1,22 @@
+[
+  { "id": "1001", "upazila_id": "101", "name": "Dhanmondi R/A (Ward 15)", "bn_name": "ধানমন্ডি আ/এ" },
+  { "id": "1002", "upazila_id": "101", "name": "Shankar / Jigatola", "bn_name": "শংকর / জিগাতলা" },
+  { "id": "1003", "upazila_id": "102", "name": "Gulshan-1", "bn_name": "গুলশান-১" },
+  { "id": "1004", "upazila_id": "102", "name": "Gulshan-2", "bn_name": "গুলশান-২" },
+  { "id": "1005", "upazila_id": "103", "name": "Banani Road 11 & Commercial", "bn_name": "বনানী রোড ১১" },
+  { "id": "1006", "upazila_id": "103", "name": "Banani Block A-F", "bn_name": "বনানী ব্লক এ-এফ" },
+  { "id": "1007", "upazila_id": "104", "name": "Uttara Sector 1-7", "bn_name": "উত্তরা সেক্টর ১-৭" },
+  { "id": "1008", "upazila_id": "104", "name": "Uttara Sector 8-14", "bn_name": "উত্তরা সেক্টর ৮-১৪" },
+  { "id": "1009", "upazila_id": "105", "name": "Mirpur-1 / Sony Cinema", "bn_name": "মিরপুর-১" },
+  { "id": "1010", "upazila_id": "105", "name": "Mirpur-10 / 11 / Pallabi", "bn_name": "মিরপুর-১০ / ১১ / পল্লবী" },
+  { "id": "1011", "upazila_id": "105", "name": "Mirpur-2 / Mirpur DOHS", "bn_name": "মিরপুর-২ / ডিওএইচএস" },
+  { "id": "1012", "upazila_id": "106", "name": "Mohammadpur Town Hall / Ring Rd", "bn_name": "মোহাম্মদপুর টাউন হল" },
+  { "id": "1013", "upazila_id": "106", "name": "Lalmatia / Iqbal Road", "bn_name": "লালমাটিয়া / ইকবাল রোড" },
+  { "id": "1014", "upazila_id": "120", "name": "Bashundhara Block A-D", "bn_name": "বসুন্ধরা ব্লক এ-ডি" },
+  { "id": "1015", "upazila_id": "120", "name": "Bashundhara Block E-P", "bn_name": "বসুন্ধরা ব্লক ই-পি" },
+  { "id": "1016", "upazila_id": "107", "name": "Middle Badda / Merul", "bn_name": "মধ্য বাড্ডা / মেরুল" },
+  { "id": "1017", "upazila_id": "113", "name": "Savar Pourashava", "bn_name": "সাভার পৌরসভা" },
+  { "id": "1018", "upazila_id": "113", "name": "Ashulia / DEPZ", "bn_name": "আশুলিয়া" },
+  { "id": "1019", "upazila_id": "131", "name": "GEC Circle / Nasirabad", "bn_name": "জিইসি মোড় / নাসিরাবাদ" },
+  { "id": "1020", "upazila_id": "133", "name": "Agrabad Commercial Area", "bn_name": "আগ্রাবাদ বা/এ" }
+]
