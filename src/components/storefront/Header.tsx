@@ -65,10 +65,10 @@ export default function Header() {
     loadData();
   }, []);
 
-  // Filter top nav categories based on admin configuration
-  const activeHeaderCategories = categories.filter((c) =>
-    headerCategorySlugs.includes(c.slug)
-  );
+  // Map and sort top nav categories according to the exact sequence in headerCategorySlugs
+  const activeHeaderCategories = headerCategorySlugs
+    .map((slug) => categories.find((c) => c.slug === slug))
+    .filter((c): c is Category => Boolean(c));
 
   const isCheckout = pathname?.startsWith("/checkout") || pathname?.startsWith("/order-confirmation");
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/who/hodako")) return null;

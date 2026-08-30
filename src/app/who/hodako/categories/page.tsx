@@ -2,7 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Trash2, Edit2, Check, X, Layers, Save, RefreshCw, UploadCloud } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  Layers,
+  Save,
+  RefreshCw,
+  UploadCloud,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Sliders,
+  Sparkles,
+} from "lucide-react";
 import { Category } from "@/types";
 import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import { slugify } from "@/lib/utils";
@@ -171,6 +186,26 @@ export default function AdminCategoriesPage() {
     } catch (e) {}
   };
 
+  const moveHeaderCategory = async (index: number, direction: "left" | "right") => {
+    const newIndex = direction === "left" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= headerCategories.length) return;
+
+    const updated = [...headerCategories];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(newIndex, 0, moved);
+
+    setHeaderCategories(updated);
+
+    try {
+      await setDoc(doc(db, "settings", "categories"), {
+        categories,
+        headerCategories: updated,
+        updatedAt: new Date().toISOString(),
+      });
+      addToast("Header category order updated!", "success");
+    } catch (e) {}
+  };
+
   const handleResetCategories = async () => {
     setCategories(INITIAL_CATEGORIES);
     setHeaderCategories(["casual-shirts", "polos", "men"]);
@@ -193,7 +228,7 @@ export default function AdminCategoriesPage() {
             TAXONOMY & NAVIGATION CMS
           </span>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold uppercase tracking-wider text-admin-text-primary-light mt-1">
-            CATEGORIES & HEADER NAV
+            CATEGORIES & SECONDARY HEADER NAV
           </h1>
         </div>
 
@@ -201,14 +236,14 @@ export default function AdminCategoriesPage() {
           <button
             type="button"
             onClick={handleResetCategories}
-            className="px-4 py-2.5 bg-line-200 text-admin-text-primary-light hover:bg-line-300 rounded-lg text-xs font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 bg-line-200 text-admin-text-primary-light hover:bg-line-300 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Reset Defaults</span>
           </button>
           <button
             onClick={handleOpenCreate}
-            className="px-5 py-2.5 bg-admin-accent hover:bg-admin-accent-hover text-white text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+            className="px-5 py-2.5 bg-admin-accent hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Category</span>
@@ -216,43 +251,102 @@ export default function AdminCategoriesPage() {
         </div>
       </div>
 
-      {/* Top Header Navigation Shortcuts */}
-      <div className="bg-white rounded-lg border border-admin-border-light shadow-xs p-6 space-y-4">
-        <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-admin-text-primary-light pb-2 border-b border-line-200">
-          Top Header Menu Categories ({headerCategories.length} Active in Header)
-        </h2>
-        <p className="text-xs text-admin-text-secondary-light">
-          Click any badge below to toggle whether that category appears in the main storefront header navigation.
-        </p>
+      {/* TOP SECONDARY HEADER CAPSULE SIMULATOR & ORDER CONTROLS */}
+      <div className="bg-white rounded-2xl border border-admin-border-light shadow-xs p-6 space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-line-200">
+          <div>
+            <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-admin-text-primary-light flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-admin-accent" />
+              <span>Top Secondary Header Capsule Bar ({headerCategories.length} Active Items)</span>
+            </h2>
+            <p className="text-xs text-admin-text-secondary-light mt-0.5">
+              Reorder or toggle which categories are pinned to the top header capsule on mobile and desktop.
+            </p>
+          </div>
+          <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 font-bold uppercase">
+            Live Store Sync
+          </span>
+        </div>
 
-        <div className="flex flex-wrap gap-2.5 pt-1">
-          {categories.map((cat) => {
-            const isFeatured = headerCategories.includes(cat.slug);
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => toggleHeaderCategory(cat.slug)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
-                  isFeatured
-                    ? "bg-admin-accent text-white border-admin-accent shadow-xs"
-                    : "bg-bg-subtle text-admin-text-secondary border-line-200 hover:border-admin-accent hover:text-admin-text-primary"
-                }`}
-              >
-                {isFeatured && <Check className="w-3.5 h-3.5" />}
-                <span>{cat.name}</span>
-              </button>
-            );
-          })}
+        {/* Live Simulator Preview */}
+        <div className="p-4 bg-bg-subtle rounded-xl border border-line-200 space-y-2">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-ink-500">
+            <Eye className="w-3.5 h-3.5 text-ink-900" />
+            <span>Live Header Capsule Preview (Storefront Customer View):</span>
+          </div>
+
+          <div className="bg-[#EBEBEB] py-2 px-4 rounded-xl flex items-center gap-4 sm:gap-6 overflow-x-auto text-[11px] font-bold uppercase tracking-wider text-[#1C1C1C] shadow-inner">
+            <span className="text-[#0E0E0E] underline decoration-2 underline-offset-4">Home</span>
+            {headerCategories.map((slug, idx) => {
+              const cat = categories.find((c) => c.slug === slug);
+              const label = cat ? cat.name.replace(/Collection/gi, "").replace(/Men'?s?/gi, "").trim() || cat.name : slug;
+              return (
+                <div key={slug} className="flex items-center gap-1 shrink-0 bg-white/80 px-2.5 py-1 rounded-md shadow-2xs">
+                  <span>{label}</span>
+                  <div className="flex items-center gap-0.5 ml-1">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => moveHeaderCategory(idx, "left")}
+                      title="Move Left"
+                      className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-20 cursor-pointer"
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === headerCategories.length - 1}
+                      onClick={() => moveHeaderCategory(idx, "right")}
+                      title="Move Right"
+                      className="p-0.5 hover:bg-gray-200 rounded disabled:opacity-20 cursor-pointer"
+                    >
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <span className="text-gray-500 font-medium shrink-0">Shop All</span>
+          </div>
+        </div>
+
+        {/* Clickable Toggle Badges */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold uppercase text-ink-700">
+            Click to Toggle Inclusion in Top Header:
+          </label>
+          <div className="flex flex-wrap gap-2.5">
+            {categories.map((cat) => {
+              const isFeatured = headerCategories.includes(cat.slug);
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => toggleHeaderCategory(cat.slug)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border transition-all cursor-pointer active:scale-95 ${
+                    isFeatured
+                      ? "bg-admin-accent text-white border-admin-accent shadow-xs"
+                      : "bg-white text-admin-text-secondary border-line-200 hover:border-admin-accent hover:text-admin-text-primary"
+                  }`}
+                >
+                  {isFeatured ? <Check className="w-3.5 h-3.5 text-amber-400" /> : <Plus className="w-3.5 h-3.5 text-gray-400" />}
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Categories Catalog Table */}
-      <div className="bg-white rounded-lg border border-admin-border-light shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-line-200">
+      <div className="bg-white rounded-2xl border border-admin-border-light shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-line-200 flex items-center justify-between">
           <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-admin-text-primary-light">
-            All Product Categories ({categories.length})
+            All Store Categories ({categories.length})
           </h2>
+          <span className="text-xs text-ink-500 font-mono">
+            {categories.length} Taxonomy Nodes
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -263,161 +357,187 @@ export default function AdminCategoriesPage() {
                 <th className="p-4">Category Name</th>
                 <th className="p-4">Slug / URL</th>
                 <th className="p-4">Order</th>
-                <th className="p-4">In Header</th>
+                <th className="p-4">In Secondary Header</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-100 text-admin-text-primary-light">
-              {categories.map((cat) => (
-                <tr key={cat.id} className="hover:bg-bg-subtle/50 transition-colors">
-                  <td className="p-4">
-                    <div className="relative w-12 h-14 rounded overflow-hidden bg-bg-subtle border border-line-200">
-                      <Image src={cat.imageUrl} alt={cat.name} fill className="object-cover" />
-                    </div>
-                  </td>
-                  <td className="p-4 font-bold text-admin-text-primary-light">{cat.name}</td>
-                  <td className="p-4 font-mono text-admin-accent">/category/{cat.slug}</td>
-                  <td className="p-4 font-mono">{cat.order || 1}</td>
-                  <td className="p-4">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        headerCategories.includes(cat.slug)
-                          ? "bg-admin-success/15 text-admin-success"
-                          : "bg-line-200 text-admin-text-secondary"
-                      }`}
-                    >
-                      {headerCategories.includes(cat.slug) ? "In Header" : "Hidden"}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleOpenEdit(cat)}
-                      className="p-1.5 hover:bg-admin-accent-soft text-admin-accent rounded transition-colors cursor-pointer"
-                      title="Edit Category"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategory(cat.id, cat.slug)}
-                      className="p-1.5 hover:bg-admin-danger/15 text-admin-danger rounded transition-colors cursor-pointer"
-                      title="Delete Category"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {categories.map((cat) => {
+                const isInHeader = headerCategories.includes(cat.slug);
+                return (
+                  <tr key={cat.id} className="hover:bg-bg-subtle/50 transition-colors">
+                    <td className="p-4">
+                      <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-bg-subtle border border-line-200">
+                        <Image src={cat.imageUrl} alt={cat.name} fill className="object-cover" />
+                      </div>
+                    </td>
+                    <td className="p-4 font-bold text-admin-text-primary-light">{cat.name}</td>
+                    <td className="p-4 font-mono text-admin-accent">/category/{cat.slug}</td>
+                    <td className="p-4 font-mono">{cat.order || 1}</td>
+                    <td className="p-4">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          isInHeader
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {isInHeader ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                        <span>{isInHeader ? "Active in Header" : "Hidden"}</span>
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(cat)}
+                          className="p-1.5 hover:bg-bg-subtle rounded-lg text-admin-text-secondary-light hover:text-admin-accent transition-colors"
+                          title="Edit Category"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat.id, cat.slug)}
+                          className="p-1.5 hover:bg-red-50 rounded-lg text-admin-text-secondary-light hover:text-red-600 transition-colors"
+                          title="Delete Category"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modal: Create / Edit Category with Direct ImgBB Upload */}
+      {/* Category Edit / Create Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setIsModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl p-6 z-50 border border-admin-border-light space-y-4 text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-line-200">
-              <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-admin-text-primary-light">
-                {editingCategory ? "EDIT STORE CATEGORY" : "CREATE NEW STORE CATEGORY"}
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 border border-line-200 shadow-2xl animate-scaleIn">
+            <div className="flex items-center justify-between pb-3 border-b border-line-100">
+              <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-ink-900">
+                {editingCategory ? "Edit Category" : "Create New Category"}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-bg-subtle text-ink-400 hover:text-ink-900"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCategory} className="space-y-4">
+            <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold uppercase text-admin-text-secondary-light mb-1">
-                  Category Name *
+                <label className="block font-semibold uppercase text-ink-700 mb-1 text-[11px]">
+                  Category Title *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Linen Casual Shirts"
+                  placeholder="e.g. Linen Shirts"
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
                     if (!editingCategory) setSlug(slugify(e.target.value));
                   }}
-                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-bold text-admin-text-primary-light"
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded-xl focus:outline-none focus:border-ink-900"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-admin-text-secondary-light mb-1">
-                  URL Slug
+                <label className="block font-semibold uppercase text-ink-700 mb-1 text-[11px]">
+                  URL Slug *
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. linen-casual-shirts"
+                  required
+                  placeholder="e.g. linen-shirts"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-mono"
+                  onChange={(e) => setSlug(slugify(e.target.value))}
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded-xl font-mono focus:outline-none focus:border-ink-900"
                 />
               </div>
 
-              {/* Direct Image Upload to ImgBB */}
+              {/* Image & ImgBB Upload */}
               <div className="space-y-2">
-                <label className="block font-bold uppercase text-admin-text-secondary-light">
+                <label className="block font-semibold uppercase text-ink-700 text-[11px]">
                   Category Banner Image
                 </label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCategoryImageUpload}
-                    disabled={isUploading}
-                    className="text-xs file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-ink-900 file:text-white hover:file:bg-black cursor-pointer"
-                  />
-                </div>
-                {imageUrl && (
-                  <div className="mt-2 relative w-24 h-28 rounded overflow-hidden border border-line-200">
-                    <Image src={imageUrl} alt="Preview" fill className="object-cover" />
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-bg-subtle border border-line-200 shrink-0">
+                    {imageUrl && (
+                      <Image src={imageUrl} alt="Category" fill className="object-cover" />
+                    )}
                   </div>
-                )}
+                  <div className="flex-1 space-y-1">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg-subtle hover:bg-line-200 text-ink-800 rounded-xl cursor-pointer border border-line-200 transition-colors font-medium">
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>{isUploading ? "Uploading to CDN..." : "Upload Image"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCategoryImageUpload}
+                        disabled={isUploading}
+                        className="hidden"
+                      />
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Or paste image URL"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="w-full p-2 bg-bg-subtle border border-line-200 rounded-lg text-[11px]"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block font-bold uppercase text-admin-text-secondary-light mb-1">
+                  <label className="block font-semibold uppercase text-ink-700 mb-1 text-[11px]">
                     Display Order
                   </label>
                   <input
                     type="number"
+                    min="1"
                     value={order}
                     onChange={(e) => setOrder(Number(e.target.value))}
-                    className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-mono"
+                    className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded-xl"
                   />
                 </div>
-
-                <div className="flex items-center pt-5">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex flex-col justify-end">
+                  <label className="flex items-center gap-2 p-2.5 bg-bg-subtle border border-line-200 rounded-xl cursor-pointer">
                     <input
                       type="checkbox"
                       checked={inHeader}
                       onChange={(e) => setInHeader(e.target.checked)}
-                      className="accent-admin-accent w-4 h-4 cursor-pointer"
+                      className="w-4 h-4 accent-ink-900 rounded"
                     />
-                    <span className="font-bold text-admin-text-primary-light uppercase">Show in Header</span>
+                    <span className="font-semibold text-ink-800 text-[11px] uppercase">
+                      Top Header
+                    </span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-line-200">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-line-200 hover:bg-line-300 text-admin-text-primary-light rounded font-bold uppercase cursor-pointer"
+                  className="px-4 py-2.5 bg-bg-subtle hover:bg-line-200 text-ink-800 rounded-xl font-bold uppercase"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isUploading}
-                  className="px-5 py-2 bg-admin-accent hover:bg-admin-accent-hover text-white font-bold uppercase rounded tracking-wider transition-colors shadow-sm cursor-pointer"
+                  className="px-6 py-2.5 bg-ink-900 hover:bg-black text-white rounded-xl font-bold uppercase transition-all shadow-sm"
                 >
-                  {isUploading ? "Uploading..." : editingCategory ? "SAVE CHANGES" : "CREATE CATEGORY"}
+                  Save Category
                 </button>
               </div>
             </form>

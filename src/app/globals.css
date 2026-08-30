@@ -150,6 +150,7 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Custom Selection */
@@ -157,3 +158,26 @@ body {
   background-color: var(--ink-900);
   color: #FFFFFF;
 }
+
+/* Interactive touch and hover responsiveness for Mobile & PC */
+button, a, input, select {
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (hover: none) or (pointer: coarse) {
+  .active-scale:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+}
+

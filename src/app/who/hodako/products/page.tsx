@@ -303,23 +303,11 @@ export default function AdminProductsPage() {
 
         <div className="flex flex-wrap items-center gap-2 self-start">
           <button
-            onClick={handlePurgeAllJunk}
-            className="px-3 py-2 bg-accent-red/10 text-accent-red hover:bg-accent-red hover:text-white rounded text-xs font-bold uppercase tracking-wider transition-colors"
-          >
-            Purge All Products
-          </button>
-          <button
-            onClick={handleResetCatalog}
-            className="px-3 py-2 bg-bg-subtle text-ink-700 hover:bg-line-200 rounded text-xs font-bold uppercase tracking-wider transition-colors"
-          >
-            Reset Catalog
-          </button>
-          <button
             onClick={handleOpenCreateModal}
-            className="px-4 py-2 bg-admin-accent hover:bg-admin-accent-hover text-white text-xs font-bold uppercase tracking-wider rounded flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-5 py-2.5 bg-admin-accent hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Product</span>
+            <span>+ Add New Product</span>
           </button>
         </div>
       </div>

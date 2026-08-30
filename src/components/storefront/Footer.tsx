@@ -54,7 +54,7 @@ function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function Footer() {
   const { addToast } = useUIStore();
   const [footer, setFooter] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
-  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [clubPhone, setClubPhone] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
@@ -71,10 +71,10 @@ export default function Footer() {
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsletterEmail.trim()) return;
+    if (!clubPhone.trim()) return;
     setIsSubscribed(true);
-    addToast("🎉 Welcome to Dream Club! 10% coupon: DREAM10", "success");
-    setNewsletterEmail("");
+    addToast("🎉 Welcome to Dream Club! Your 10% coupon code is DREAM10", "success");
+    setClubPhone("");
   };
 
   return (
@@ -197,16 +197,16 @@ export default function Footer() {
 
             <form onSubmit={handleNewsletter} className="flex items-center gap-2">
               <input
-                type="email"
+                type="tel"
                 required
-                placeholder="Enter your email"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent-gold"
+                placeholder="017XX-XXXXXX"
+                value={clubPhone}
+                onChange={(e) => setClubPhone(e.target.value)}
+                className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent-gold font-mono"
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-accent-gold hover:bg-amber-400 text-ink-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
+                className="px-4 py-2 bg-accent-gold hover:bg-amber-400 text-ink-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 hover:scale-105"
               >
                 <span>Join</span>
                 <Send className="w-3 h-3" />

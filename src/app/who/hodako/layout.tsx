@@ -65,6 +65,7 @@ export default function AdminLayout({
     { label: "Footer Info", href: "/who/hodako/footer", icon: FileText },
     { label: "Reviews", href: "/who/hodako/reviews", icon: Star },
     { label: "Users & Access", href: "/who/hodako/users", icon: Users },
+    { label: "Settings & System", href: "/who/hodako/settings", icon: Settings },
   ];
 
   const handleSeedDatabase = async () => {

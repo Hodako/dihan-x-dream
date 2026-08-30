@@ -231,17 +231,6 @@ export default function AdminOrdersPage() {
             ORDERS MANAGEMENT ({orders.length})
           </h1>
         </div>
-
-        {orders.length > 0 && (
-          <button
-            type="button"
-            onClick={handlePurgeAllOrders}
-            className="px-3.5 py-2 bg-admin-danger/10 text-admin-danger hover:bg-admin-danger hover:text-white rounded-lg text-xs font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Purge All Orders</span>
-          </button>
-        )}
       </div>
 
       {/* Filter and Search Bar */}

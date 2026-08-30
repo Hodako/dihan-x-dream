@@ -10,10 +10,10 @@ export const INITIAL_ANNOUNCEMENT: AnnouncementSettings = {
 export const INITIAL_FOOTER_SETTINGS: FooterSettings = {
   brandName: "Dream Fashion",
   brandTagline: "Modern trend-forward fashion platform for Bangladesh. Premium casual shirts, polos, contemporary tailoring, and nationwide doorstep delivery.",
-  phone: "+880 1700-000000",
-  whatsapp: "+880 1700-000000",
+  phone: "+880 1712-345678",
+  whatsapp: "+880 1712-345678",
   email: "support@dreamfashion.com.bd",
-  address: "House 12, Road 4, Sector 3, Uttara, Dhaka - 1230, Bangladesh",
+  address: "House 14, Road 7, Sector 4, Uttara, Dhaka - 1230, Bangladesh",
   workingHours: "Saturday – Thursday: 10:00 AM – 9:00 PM (Friday Closed)",
   facebookUrl: "https://facebook.com/hodako17",
   instagramUrl: "https://instagram.com",
