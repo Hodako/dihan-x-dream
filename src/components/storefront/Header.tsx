@@ -121,6 +121,8 @@ export default function Header() {
   }, [headerCategorySlugs, categories]);
 
   const isCheckout = pathname?.startsWith("/checkout") || pathname?.startsWith("/order-confirmation");
+  const isProductPage = pathname?.startsWith("/product/");
+  const hideSecondaryHeader = isCheckout || isProductPage;
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/who/hodako")) return null;
 
   return (
@@ -212,7 +214,7 @@ export default function Header() {
             </div>
 
             {/* Bottom Secondary Strip (Matching media_1788049780292.png) */}
-            {!isCheckout && (
+            {!hideSecondaryHeader && (
               <div className="bg-[#EBEBEB] text-[#222222] px-3.5 sm:px-6 py-1.5 sm:py-2 overflow-x-auto no-scrollbar border-t border-black/5">
                 <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-[13px] font-medium tracking-wide whitespace-nowrap">
                   <Link

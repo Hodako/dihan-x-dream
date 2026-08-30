@@ -187,15 +187,16 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   // Gallery images for active color variant
   const galleryImages = useMemo(() => {
     if (activeVariant?.images && activeVariant.images.length > 0) {
-      return activeVariant.images;
+      return activeVariant.images.filter(Boolean);
+    }
+    const anyImages = product?.variants?.flatMap((v) => v.images || []).filter(Boolean);
+    if (anyImages && anyImages.length > 0) {
+      return Array.from(new Set(anyImages));
     }
     return [
       "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1200",
-      "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1200",
-      "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=1200",
-      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=1200",
     ];
-  }, [activeVariant]);
+  }, [activeVariant, product]);
 
   // Swatch unique colors
   const uniqueColors = useMemo(() => {
@@ -387,24 +388,29 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
         {/* Product Detail Layout (Tight, clean, elegant) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-start">
           {/* LEFT COLUMN: Media Gallery */}
-          <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3">
-            {/* Desktop Vertical Thumbnail Strip */}
-            <div className="hidden sm:flex flex-col gap-2 w-16 flex-shrink-0">
-              {galleryImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImageIndex(idx)}
-                  className={cn(
-                    "relative aspect-[3/4] w-full rounded-lg overflow-hidden border-2 transition-all bg-bg-subtle",
-                    selectedImageIndex === idx
-                      ? "border-ink-900 shadow-xs"
-                      : "border-line-200 opacity-70 hover:opacity-100"
-                  )}
-                >
-                  <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover object-top" sizes="64px" />
-                </button>
-              ))}
-            </div>
+          <div className={cn(
+            "lg:col-span-7 flex flex-col-reverse gap-2.5 sm:gap-3",
+            galleryImages.length > 1 ? "sm:flex-row" : ""
+          )}>
+            {/* Desktop Vertical Thumbnail Strip (Only shown if > 1 image) */}
+            {galleryImages.length > 1 && (
+              <div className="hidden sm:flex flex-col gap-2 w-16 flex-shrink-0">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={cn(
+                      "relative aspect-[3/4] w-full rounded-lg overflow-hidden border-2 transition-all bg-bg-subtle",
+                      selectedImageIndex === idx
+                        ? "border-ink-900 shadow-xs"
+                        : "border-line-200 opacity-70 hover:opacity-100"
+                    )}
+                  >
+                    <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover object-top" sizes="64px" />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Main Portrait Image Container */}
             <div
@@ -420,10 +426,12 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
                 className="object-cover object-top transition-transform duration-500 hover:scale-105"
               />
 
-              {/* Mobile Image Counter */}
-              <div className="sm:hidden absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-0.5 rounded-full">
-                {selectedImageIndex + 1} / {galleryImages.length}
-              </div>
+              {/* Mobile Image Counter (Only shown if > 1 image) */}
+              {galleryImages.length > 1 && (
+                <div className="sm:hidden absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-0.5 rounded-full">
+                  {selectedImageIndex + 1} / {galleryImages.length}
+                </div>
+              )}
 
               {/* Badges */}
               <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none">
@@ -441,21 +449,23 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
             </div>
           </div>
 
-          {/* Mobile Horizontal Thumbnail Rail */}
-          <div className="sm:hidden flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            {galleryImages.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedImageIndex(idx)}
-                className={cn(
-                  "relative w-12 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all bg-bg-subtle",
-                  selectedImageIndex === idx ? "border-ink-900 shadow-xs" : "border-line-200 opacity-60"
-                )}
-              >
-                <Image src={img} alt="Thumb" fill className="object-cover object-top" sizes="48px" />
-              </button>
-            ))}
-          </div>
+          {/* Mobile Horizontal Thumbnail Rail (Only shown if > 1 image) */}
+          {galleryImages.length > 1 && (
+            <div className="sm:hidden flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={cn(
+                    "relative w-12 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all bg-bg-subtle",
+                    selectedImageIndex === idx ? "border-ink-900 shadow-xs" : "border-line-200 opacity-60"
+                  )}
+                >
+                  <Image src={img} alt="Thumb" fill className="object-cover object-top" sizes="48px" />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* RIGHT COLUMN: Buy Box */}
           <div ref={buyBoxRef} className="lg:col-span-5 space-y-3.5 sm:space-y-4 lg:sticky lg:top-20">
