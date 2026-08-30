@@ -19,7 +19,7 @@ import {
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from "@/lib/seedData";
 import ProductCard from "@/components/storefront/ProductCard";
 import { Product, Category } from "@/types";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface CategoryClientProps {
@@ -108,7 +108,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
           setCategories(catSnap.data().categories);
         }
 
-        const prodSnap = await getDocs(collection(db, "products"));
+        const prodSnap = await getDocs(query(collection(db, "products"), limit(50)));
         if (!prodSnap.empty) {
           prodSnap.forEach((d) => {
             const data = { id: d.id, ...d.data() } as Product;

@@ -5,7 +5,8 @@ const nextConfig = {
   ...(isExport ? { output: 'export' } : {}),
   reactStrictMode: true,
   images: {
-    unoptimized: true,
+    unoptimized: isExport,
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
