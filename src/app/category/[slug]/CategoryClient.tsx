@@ -51,7 +51,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
   }, [slug, sortBy]);
 
   return (
-    <div className="pt-[74px] sm:pt-[82px] pb-16 bg-white min-h-screen">
+    <div className="pt-[96px] sm:pt-[100px] lg:pt-[82px] pb-16 bg-white min-h-screen">
       {/* Category Hero Banner */}
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 mb-4 sm:mb-8">
         <div className="relative aspect-[21/9] sm:aspect-[24/7] w-full rounded-2xl overflow-hidden bg-ink-900 shadow-md">

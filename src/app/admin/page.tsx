@@ -12,54 +12,84 @@ import {
   CheckCircle2,
   Clock,
   Truck,
+  Sparkles,
+  Layers,
+  Palette,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { Order } from "@/types";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = JSON.parse(localStorage.getItem("recent_orders") || "[]");
-      setOrders(stored);
+    async function loadOrders() {
+      try {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_orders") || "[]");
+        const snap = await getDocs(collection(db, "orders"));
+        if (!snap.empty) {
+          const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
+          setOrders(loaded.filter((o) => !deletedIds.includes(o.id)));
+          return;
+        }
+      } catch (e) {}
+
+      if (typeof window !== "undefined") {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_orders") || "[]");
+        const stored = JSON.parse(localStorage.getItem("recent_orders") || "[]");
+        setOrders(stored.filter((o: Order) => !deletedIds.includes(o.id)));
+      }
     }
+    loadOrders();
   }, []);
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0) + 128450;
+  // 100% Genuine, accurate metrics directly computed from real orders
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
   const pendingCOD = orders
     .filter((o) => o.paymentMethod === "cod" || o.paymentMethod === "partial")
-    .reduce((sum, o) => sum + (o.remainingDue || 0), 0) + 34200;
-  const totalOrdersCount = orders.length + 38;
+    .reduce((sum, o) => sum + (o.remainingDue || 0), 0);
+  const totalOrdersCount = orders.length;
+
+  const pendingList = orders.filter((o) => o.status === "pending");
+  const processingList = orders.filter((o) => o.status === "processing");
+  const shippedList = orders.filter((o) => o.status === "shipped");
+  const deliveredList = orders.filter((o) => o.status === "delivered");
+
+  const pendingRevenue = pendingList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  const processingRevenue = processingList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  const shippedRevenue = shippedList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  const deliveredRevenue = deliveredList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
 
   const kpis = [
     {
-      title: "TODAY'S REVENUE",
+      title: "TOTAL STORE REVENUE",
       value: formatPrice(totalRevenue),
-      change: "+18.4% from yesterday",
+      change: `${orders.length} total orders recorded`,
       icon: TrendingUp,
       accentColor: "text-admin-accent",
     },
     {
-      title: "ORDERS COMPLETED",
+      title: "TOTAL ORDERS",
       value: totalOrdersCount.toString(),
-      change: "4 pending dispatch",
+      change: `${pendingList.length} pending confirmation`,
       icon: Package,
       accentColor: "text-admin-info",
     },
     {
-      title: "PENDING COD RECEIVABLE",
+      title: "COD RECEIVABLE",
       value: formatPrice(pendingCOD),
-      change: "In transit with courier",
+      change: `${shippedList.length} in transit with courier`,
       icon: Banknote,
       accentColor: "text-admin-warning",
     },
     {
-      title: "LOW STOCK ALERTS",
-      value: "3 Items",
-      change: "Restock required",
-      icon: AlertTriangle,
-      accentColor: "text-admin-danger",
+      title: "DISPATCHED COURIER",
+      value: `${orders.filter((o) => o.steadfast).length} Orders`,
+      change: "Synced with Steadfast",
+      icon: Truck,
+      accentColor: "text-admin-success",
     },
   ];
 
@@ -107,49 +137,69 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-lg border border-admin-border-light shadow-xs space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light">
-              ORDER STATUS PIPELINE
+              REAL ORDER STATUS PIPELINE
             </h2>
-            <span className="text-xs text-admin-text-secondary-light">Live Snapshot</span>
+            <span className="text-xs text-admin-text-secondary-light">Live Firestore Data</span>
           </div>
 
           <div className="space-y-4 text-xs">
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
                 <span className="text-ink-700">1. Pending Confirmation</span>
-                <span className="text-admin-warning">12 Orders (৳38,400)</span>
+                <span className="text-admin-warning font-mono">
+                  {pendingList.length} Orders ({formatPrice(pendingRevenue)})
+                </span>
               </div>
               <div className="w-full bg-line-100 h-2.5 rounded-full overflow-hidden">
-                <div className="bg-admin-warning h-full rounded-full" style={{ width: "35%" }} />
+                <div
+                  className="bg-admin-warning h-full rounded-full transition-all duration-500"
+                  style={{ width: `${totalOrdersCount > 0 ? (pendingList.length / totalOrdersCount) * 100 : 0}%` }}
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
                 <span className="text-ink-700">2. Processing & Packaging</span>
-                <span className="text-admin-info">18 Orders (৳62,100)</span>
+                <span className="text-admin-info font-mono">
+                  {processingList.length} Orders ({formatPrice(processingRevenue)})
+                </span>
               </div>
               <div className="w-full bg-line-100 h-2.5 rounded-full overflow-hidden">
-                <div className="bg-admin-info h-full rounded-full" style={{ width: "55%" }} />
+                <div
+                  className="bg-admin-info h-full rounded-full transition-all duration-500"
+                  style={{ width: `${totalOrdersCount > 0 ? (processingList.length / totalOrdersCount) * 100 : 0}%` }}
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
                 <span className="text-ink-700">3. Out with Courier / Shipped</span>
-                <span className="text-admin-accent">24 Orders (৳89,500)</span>
+                <span className="text-admin-accent font-mono">
+                  {shippedList.length} Orders ({formatPrice(shippedRevenue)})
+                </span>
               </div>
               <div className="w-full bg-line-100 h-2.5 rounded-full overflow-hidden">
-                <div className="bg-admin-accent h-full rounded-full" style={{ width: "70%" }} />
+                <div
+                  className="bg-admin-accent h-full rounded-full transition-all duration-500"
+                  style={{ width: `${totalOrdersCount > 0 ? (shippedList.length / totalOrdersCount) * 100 : 0}%` }}
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex justify-between font-semibold">
                 <span className="text-ink-700">4. Successfully Delivered</span>
-                <span className="text-admin-success">92 Orders (৳345,000)</span>
+                <span className="text-admin-success font-mono">
+                  {deliveredList.length} Orders ({formatPrice(deliveredRevenue)})
+                </span>
               </div>
               <div className="w-full bg-line-100 h-2.5 rounded-full overflow-hidden">
-                <div className="bg-admin-success h-full rounded-full" style={{ width: "95%" }} />
+                <div
+                  className="bg-admin-success h-full rounded-full transition-all duration-500"
+                  style={{ width: `${totalOrdersCount > 0 ? (deliveredList.length / totalOrdersCount) * 100 : 0}%` }}
+                />
               </div>
             </div>
           </div>
@@ -165,93 +215,38 @@ export default function AdminDashboardPage() {
               href="/admin/products"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
-              <span>+ Add New Product (with imgbb upload)</span>
+              <span>+ Add New Product (with ImgBB Upload)</span>
               <ArrowRight className="w-4 h-4 text-admin-accent" />
             </Link>
-
             <Link
               href="/admin/orders"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
-              <span>Review Recent Orders & Update Timeline</span>
+              <span>Inspect Orders & Dispatch to Steadfast</span>
               <ArrowRight className="w-4 h-4 text-admin-accent" />
             </Link>
-
             <Link
-              href="/admin/logistics"
+              href="/admin/spinner"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
-              <span>Configure BD Delivery Zones & COD Rules</span>
-              <ArrowRight className="w-4 h-4 text-admin-accent" />
+              <span>Configure Lucky Spin-To-Win Wheel</span>
+              <Sparkles className="w-4 h-4 text-accent-gold" />
             </Link>
-
             <Link
-              href="/admin/banners"
+              href="/admin/categories"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
-              <span>Manage Hero Carousel & Lookbook CMS</span>
-              <ArrowRight className="w-4 h-4 text-admin-accent" />
+              <span>Top Header Categories & Image CMS</span>
+              <Layers className="w-4 h-4 text-admin-info" />
+            </Link>
+            <Link
+              href="/admin/theme"
+              className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
+            >
+              <span>Theme & UI Customizer</span>
+              <Palette className="w-4 h-4 text-pink-600" />
             </Link>
           </div>
-        </div>
-      </div>
-
-      {/* Recent Orders Data Table */}
-      <div className="bg-white rounded-lg border border-admin-border-light shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-line-200 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light">
-            RECENT STORE ORDERS
-          </h2>
-          <Link
-            href="/admin/orders"
-            className="text-xs font-semibold text-admin-accent hover:underline uppercase"
-          >
-            View All Orders →
-          </Link>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead>
-              <tr className="bg-bg-subtle border-b border-line-200 text-admin-text-secondary-light font-semibold uppercase">
-                <th className="p-4">Order ID</th>
-                <th className="p-4">Customer</th>
-                <th className="p-4">Location</th>
-                <th className="p-4">Payment</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line-100 text-admin-text-primary-light">
-              {orders.slice(0, 5).map((ord) => (
-                <tr key={ord.id} className="hover:bg-bg-subtle/50 transition-colors">
-                  <td className="p-4 font-mono font-bold text-admin-accent">{ord.orderNumber}</td>
-                  <td className="p-4 font-semibold">{ord.customerName}</td>
-                  <td className="p-4 text-admin-text-secondary-light">
-                    {ord.shippingAddress.districtName} ({ord.shippingAddress.upazilaName})
-                  </td>
-                  <td className="p-4 uppercase">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-bg-subtle border border-line-200">
-                      {ord.paymentMethod}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-admin-accent-soft text-admin-accent">
-                      {ord.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right font-mono font-bold">{formatPrice(ord.grandTotal)}</td>
-                </tr>
-              ))}
-              {orders.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-admin-text-secondary-light">
-                    No orders placed yet. Place an order on the storefront or click &ldquo;Seed Mock Data&rdquo;.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

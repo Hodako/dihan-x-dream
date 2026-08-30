@@ -60,15 +60,14 @@ export default function Header() {
     headerCategorySlugs.includes(c.slug)
   );
 
-  // Sub-category strip on category pages
+  // Hide sub-category bar on checkout and product pages if needed
   const isCheckoutOrProduct =
     pathname?.startsWith("/checkout") ||
-    pathname?.startsWith("/product") ||
     pathname?.startsWith("/order-confirmation");
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-line-100 shadow-2xs">
         {/* Optional Top Announcement Bar */}
         {announcement.enabled && announcement.text && (
           <div className="bg-[#0A0A0A] text-white text-[10px] sm:text-[11px] font-medium tracking-wider text-center py-1 px-4">
@@ -77,7 +76,7 @@ export default function Header() {
         )}
 
         {/* Main Header Bar */}
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-1.5 pb-0.5 sm:pt-2 sm:pb-1">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-1.5 pb-1 sm:pt-2 sm:pb-1.5">
           <div className="bg-[#0E0E0E] text-white rounded-xl sm:rounded-full px-3 sm:px-6 h-11 sm:h-14 flex items-center justify-between shadow-md">
             {/* Left: Mobile Hamburger / Brand Logo */}
             <div className="flex items-center gap-2.5 sm:gap-3">
@@ -145,6 +144,53 @@ export default function Header() {
             </div>
           </div>
         </div>
+
+        {/* MOBILE / PHONE SECONDARY CATEGORY STRIP */}
+        {!isCheckoutOrProduct && (
+          <div className="lg:hidden border-t border-line-100 bg-bg-subtle/80 backdrop-blur-xs px-2.5 py-1.5 overflow-x-auto no-scrollbar">
+            <div className="flex items-center space-x-1.5 whitespace-nowrap">
+              <Link
+                href="/"
+                className={cn(
+                  "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shrink-0",
+                  pathname === "/"
+                    ? "bg-[#0E0E0E] text-white shadow-xs"
+                    : "bg-white text-ink-800 border border-line-200 hover:bg-line-100"
+                )}
+              >
+                Home
+              </Link>
+              {activeHeaderCategories.map((cat) => {
+                const isActive = pathname === `/category/${cat.slug}`;
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}`}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shrink-0",
+                      isActive
+                        ? "bg-[#0E0E0E] text-white shadow-xs"
+                        : "bg-white text-ink-800 border border-line-200 hover:bg-line-100"
+                    )}
+                  >
+                    {cat.name}
+                  </Link>
+                );
+              })}
+              <Link
+                href="/shop"
+                className={cn(
+                  "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shrink-0",
+                  pathname === "/shop"
+                    ? "bg-[#0E0E0E] text-white shadow-xs"
+                    : "bg-white text-ink-800 border border-line-200 hover:bg-line-100"
+                )}
+              >
+                Shop All
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Mobile Drawer Navigation Menu */}

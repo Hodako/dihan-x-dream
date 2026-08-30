@@ -8,13 +8,14 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const INITIAL_ADMIN_SLICES: SpinnerSlice[] = [
-  { id: "s1", label: "10% OFF", prefix: "DF-10", discountText: "10% Discount", discountType: "percent", discountValue: 10, color: "#0E0E0E", textColor: "#FFFFFF", quota: 500, wonCount: 12 },
-  { id: "s2", label: "TRY AGAIN", prefix: "TRY", discountText: "Better luck next time!", discountType: "fixed", discountValue: 0, color: "#4B5563", textColor: "#FFFFFF", isTryAgain: true, quota: 9999, wonCount: 45 },
-  { id: "s3", label: "৳200 OFF", prefix: "DF-200", discountText: "৳200 Flat Discount", discountType: "fixed", discountValue: 200, color: "#C8102E", textColor: "#FFFFFF", quota: 200, wonCount: 8 },
-  { id: "s4", label: "15% OFF", prefix: "DF-15", discountText: "15% Discount", discountType: "percent", discountValue: 15, color: "#1F2937", textColor: "#FFFFFF", quota: 300, wonCount: 15 },
-  { id: "s5", label: "FREE SHIP", prefix: "DF-FREE", discountText: "Free Delivery", discountType: "fixed", discountValue: 120, color: "#B8955A", textColor: "#FFFFFF", quota: 400, wonCount: 22 },
-  { id: "s6", label: "TRY AGAIN", prefix: "TRY", discountText: "Better luck next time!", discountType: "fixed", discountValue: 0, color: "#374151", textColor: "#FFFFFF", isTryAgain: true, quota: 9999, wonCount: 38 },
-  { id: "s7", label: "20% OFF", prefix: "DF-20", discountText: "20% Mega Discount", discountType: "percent", discountValue: 20, color: "#991B1B", textColor: "#FFFFFF", quota: 100, wonCount: 4 },
+  { id: "s1", label: "10% OFF", prefix: "DF-10", discountText: "10% Discount", discountType: "percent", discountValue: 10, color: "#0E0E0E", textColor: "#FFFFFF", quota: 500, wonCount: 0 },
+  { id: "s2", label: "SORRY", prefix: "SORRY", discountText: "Sorry, you didn't win this time!", discountType: "fixed", discountValue: 0, color: "#0284c7", textColor: "#FFFFFF", isTryAgain: true, quota: 9999, wonCount: 0 },
+  { id: "s3", label: "৳200 OFF", prefix: "DF-200", discountText: "৳200 Flat Discount", discountType: "fixed", discountValue: 200, color: "#C8102E", textColor: "#FFFFFF", quota: 200, wonCount: 0 },
+  { id: "s4", label: "NO LUCK", prefix: "NOLUCK", discountText: "No luck! Try another spin!", discountType: "fixed", discountValue: 0, color: "#38bdf8", textColor: "#0E0E0E", isTryAgain: true, quota: 9999, wonCount: 0 },
+  { id: "s5", label: "FREE SHIP", prefix: "DF-FREE", discountText: "Free Delivery", discountType: "fixed", discountValue: 120, color: "#B8955A", textColor: "#FFFFFF", quota: 400, wonCount: 0 },
+  { id: "s6", label: "TRY AGAIN", prefix: "TRY", discountText: "Better luck next time!", discountType: "fixed", discountValue: 0, color: "#0ea5e9", textColor: "#FFFFFF", isTryAgain: true, quota: 9999, wonCount: 0 },
+  { id: "s7", label: "15% OFF", prefix: "DF-15", discountText: "15% Discount", discountType: "percent", discountValue: 15, color: "#1F2937", textColor: "#FFFFFF", quota: 300, wonCount: 0 },
+  { id: "s8", label: "20% OFF", prefix: "DF-20", discountText: "20% Mega Discount", discountType: "percent", discountValue: 20, color: "#991B1B", textColor: "#FFFFFF", quota: 100, wonCount: 0 },
 ];
 
 export default function AdminSpinnerPage() {
