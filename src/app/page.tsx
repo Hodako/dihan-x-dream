@@ -64,7 +64,7 @@ export default function HomePage() {
   const featuredProducts = products;
 
   return (
-    <div className="min-h-screen pt-[96px] sm:pt-[100px] lg:pt-[76px] pb-8 bg-white">
+    <div className="min-h-screen pt-[105px] sm:pt-[110px] lg:pt-[84px] pb-8 bg-white">
       {/* 1. Curved Hero Banner (Minimal height, clean photography, no button tag) */}
       <HeroCarousel slides={banners} />
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Copy, Check, Gift, Clock, Sparkles, RotateCcw, AlertCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { X, Copy, Check, Gift, Clock, Sparkles, RotateCcw, Award } from "lucide-react";
 import { useUIStore } from "@/store/useUIStore";
 import { cn } from "@/lib/utils";
 import { SpinnerSlice, SpinnerSettings } from "@/types";
@@ -29,7 +30,9 @@ function generateUniqueCode(prefix: string): string {
 }
 
 export default function SpinToWinModal() {
+  const pathname = usePathname();
   const { addToast } = useUIStore();
+
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isTabVisible, setIsTabVisible] = useState(true);
@@ -109,7 +112,20 @@ export default function SpinToWinModal() {
     return () => clearInterval(interval);
   }, [activeReward]);
 
+  if (!mounted) return null;
+
+  // HIDE SPINNER ON PRODUCT PAGES & ADMIN / CHECKOUT ROUTES
+  if (
+    pathname?.startsWith("/product") ||
+    pathname?.startsWith("/checkout") ||
+    pathname?.startsWith("/admin")
+  ) {
+    return null;
+  }
+
   const remainingSpins = Math.max(0, maxSpins - spinCount);
+  const sliceCount = slices.length;
+  const sliceAngle = 360 / sliceCount;
 
   const handleSpin = () => {
     if (isSpinning) return;
@@ -121,8 +137,6 @@ export default function SpinToWinModal() {
 
     setIsSpinning(true);
     setTryAgainMessage(null);
-    const sliceCount = slices.length;
-    const sliceAngle = 360 / sliceCount;
 
     // Pick winning slice
     const winningIndex = Math.floor(Math.random() * sliceCount);
@@ -143,7 +157,7 @@ export default function SpinToWinModal() {
         localStorage.setItem("dream_user_spin_count", newCount.toString());
       }
 
-      // Check if winning slice is a non-winning "Sorry" / "No Luck" / "Try Again" slice
+      // Check if non-winning slice
       if (
         winningSlice.isTryAgain ||
         winningSlice.label === "SORRY" ||
@@ -165,7 +179,7 @@ export default function SpinToWinModal() {
         const rewardSession = {
           slice: winningSlice,
           code: generatedCode,
-          expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
+          expiresAt: Date.now() + 10 * 60 * 1000,
         };
         setActiveReward(rewardSession);
         if (typeof window !== "undefined") {
@@ -184,18 +198,13 @@ export default function SpinToWinModal() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  if (!mounted) return null;
-
-  const sliceCount = slices.length;
-  const sliceAngle = 360 / sliceCount;
-
   return (
     <>
-      {/* 1. Floating Left-Docked "Spin to win" Tab matching media_1788048240348.png */}
+      {/* 1. Floating Left-Docked "Spin to win" Tab (Visible on PC & Mobile) */}
       {isTabVisible && !isOpen && (
         <div className="fixed left-0 top-1/2 -translate-y-1/2 z-40 flex items-center">
           <div className="relative group">
-            {/* Pinned Circular Close Button on Top-Right Corner */}
+            {/* Pinned Circular Close Button */}
             <button
               type="button"
               onClick={(e) => {
@@ -209,11 +218,11 @@ export default function SpinToWinModal() {
               <X className="w-3 h-3 stroke-[2.5]" />
             </button>
 
-            {/* Main Vertical Tab */}
+            {/* Main Vertical Tab with PC Hover Animations */}
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="bg-[#222222] hover:bg-black text-white rounded-r-md shadow-2xl py-4 px-2.5 flex items-center justify-center transition-all cursor-pointer select-none border-y border-r border-white/20 active:scale-95"
+              className="bg-[#1A1A1A] hover:bg-black text-white rounded-r-lg shadow-2xl py-4 sm:py-5 px-2.5 sm:px-3 flex items-center justify-center transition-all duration-300 group-hover:translate-x-0.5 cursor-pointer select-none border-y border-r border-white/20 active:scale-95"
               aria-label="Open Spin to Win"
             >
               <span className="[writing-mode:vertical-rl] rotate-180 text-xs sm:text-[13px] font-bold tracking-wider text-white whitespace-nowrap">
@@ -224,39 +233,39 @@ export default function SpinToWinModal() {
         </div>
       )}
 
-      {/* 2. Lucky Spinner Modal Dialog */}
+      {/* 2. Lucky Spinner Modal Dialog (CLEAN WHITE THEME) */}
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/65 backdrop-blur-xs transition-opacity"
             onClick={() => !isSpinning && setIsOpen(false)}
           />
 
-          <div className="relative w-full max-w-md bg-[#121212] text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 z-50 text-center space-y-5 overflow-hidden">
-            {/* Background luxury gradient glow */}
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent-gold/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative w-full max-w-md bg-white text-ink-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-line-200 z-50 text-center space-y-5 overflow-hidden">
+            {/* Soft decorative accent glow */}
+            <div className="absolute -top-20 -left-20 w-44 h-44 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -right-20 w-44 h-44 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Close Modal Button */}
             <button
               type="button"
               disabled={isSpinning}
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors disabled:opacity-30 cursor-pointer"
+              className="absolute top-4 right-4 text-gray-400 hover:text-ink-900 p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-30 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Header */}
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-gold/15 text-accent-gold text-[10px] font-bold uppercase tracking-widest border border-accent-gold/30">
-                <Sparkles className="w-3 h-3" />
-                <span>Dream Rewards</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold uppercase tracking-widest border border-amber-200">
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Dream Fashion Rewards</span>
               </div>
-              <h2 className="font-heading text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
+              <h2 className="font-heading text-xl sm:text-2xl font-black uppercase tracking-wider text-ink-900">
                 SPIN & WIN DISCOUNT
               </h2>
-              <p className="text-xs text-gray-400 max-w-xs mx-auto">
+              <p className="text-xs text-gray-500 max-w-xs mx-auto">
                 {activeReward
                   ? "Your 10-minute exclusive discount is ready to claim!"
                   : `Spin the wheel to unlock special discounts! (${remainingSpins}/${maxSpins} spins remaining)`}
@@ -267,77 +276,86 @@ export default function SpinToWinModal() {
             <div className="relative w-64 h-64 mx-auto my-2 select-none">
               {/* Pointer Marker at the Top */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-2.5 z-30 pointer-events-none">
-                <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[18px] border-t-accent-gold drop-shadow-md" />
+                <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[18px] border-t-amber-500 drop-shadow-md" />
               </div>
 
-              {/* Rotating Wheel Circle */}
+              {/* Rotating SVG Wheel with Mathematically Perfect Radial Text Alignment */}
               <div
-                className="w-full h-full rounded-full border-4 border-accent-gold shadow-2xl relative overflow-hidden transition-transform ease-out"
+                className="w-full h-full rounded-full border-4 border-amber-500 shadow-xl relative overflow-hidden transition-transform ease-out bg-white"
                 style={{
                   transform: `rotate(${rotationAngle}deg)`,
                   transitionDuration: isSpinning ? "4500ms" : "0ms",
                   transitionTimingFunction: "cubic-bezier(0.15, 0.9, 0.25, 1)",
                 }}
               >
-                {slices.map((slice, index) => {
-                  const angle = index * sliceAngle;
-                  return (
-                    <div
-                      key={slice.id}
-                      className="absolute top-0 left-0 w-full h-full"
-                      style={{
-                        transform: `rotate(${angle}deg)`,
-                        transformOrigin: "50% 50%",
-                      }}
-                    >
-                      <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  {slices.map((slice, index) => {
+                    const startAngle = index * sliceAngle;
+                    const centerAngle = startAngle + sliceAngle / 2;
+
+                    // Calculate SVG Pie Slice Path
+                    const rad = (sliceAngle * Math.PI) / 180;
+                    const x = 50 + 50 * Math.sin(rad);
+                    const y = 50 - 50 * Math.cos(rad);
+
+                    return (
+                      <g
+                        key={slice.id}
+                        transform={`rotate(${startAngle} 50 50)`}
+                      >
+                        {/* Slice Sector */}
                         <path
-                          d={`M 50 50 L 50 0 A 50 50 0 0 1 ${
-                            50 + 50 * Math.sin((sliceAngle * Math.PI) / 180)
-                          } ${50 - 50 * Math.cos((sliceAngle * Math.PI) / 180)} Z`}
+                          d={`M 50 50 L 50 0 A 50 50 0 0 1 ${x} ${y} Z`}
                           fill={slice.color}
-                          stroke="#1a1a1a"
+                          stroke="#FFFFFF"
                           strokeWidth="0.75"
                         />
-                      </svg>
-                      {/* Text Label on Slice */}
-                      <span
-                        className="absolute top-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] font-black uppercase tracking-wider origin-bottom"
-                        style={{
-                          color: slice.textColor || "#FFFFFF",
-                          transform: `rotate(${sliceAngle / 2}deg) translateY(6px)`,
-                        }}
-                      >
-                        {slice.label}
-                      </span>
-                    </div>
-                  );
-                })}
+
+                        {/* Perfectly Centered Radial Text */}
+                        <g transform={`rotate(${sliceAngle / 2} 50 50)`}>
+                          <text
+                            x="50"
+                            y="13.5"
+                            textAnchor="middle"
+                            fill={slice.textColor || "#FFFFFF"}
+                            fontSize="4.4"
+                            fontWeight="900"
+                            letterSpacing="0.04em"
+                            fontFamily="system-ui, -apple-system, sans-serif"
+                            className="select-none uppercase"
+                          >
+                            {slice.label}
+                          </text>
+                        </g>
+                      </g>
+                    );
+                  })}
+                </svg>
               </div>
 
-              {/* Center Hub */}
-              <div className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-[#0A0A0A] border-2 border-accent-gold shadow-xl flex items-center justify-center z-20">
-                <Gift className="w-5 h-5 text-accent-gold animate-pulse" />
+              {/* Center Gold Hub */}
+              <div className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-white border-3 border-amber-500 shadow-md flex items-center justify-center z-20">
+                <Gift className="w-5 h-5 text-amber-600 animate-pulse" />
               </div>
             </div>
 
             {/* Try Again / Sorry Alert Message */}
             {tryAgainMessage && (
-              <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-semibold animate-fade-in flex items-center justify-center gap-2">
-                <RotateCcw className="w-4 h-4 text-sky-400 shrink-0" />
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs font-semibold animate-fade-in flex items-center justify-center gap-2">
+                <RotateCcw className="w-4 h-4 text-sky-600 shrink-0" />
                 <span>{tryAgainMessage}</span>
               </div>
             )}
 
             {/* Active Voucher Claim or Spin CTA Button */}
             {activeReward ? (
-              <div className="bg-white/5 border border-accent-gold/40 rounded-2xl p-4 space-y-3">
+              <div className="bg-amber-50/70 border border-amber-300 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-accent-gold uppercase tracking-wider">
+                  <span className="font-bold text-amber-900 uppercase tracking-wider">
                     {activeReward.slice.discountText}
                   </span>
-                  <span className="text-[11px] text-gray-400 flex items-center gap-1 font-mono">
-                    <Clock className="w-3.5 h-3.5 text-accent-gold" />
+                  <span className="text-[11px] text-amber-700 flex items-center gap-1 font-mono">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
                     <span>Expires in {remainingTime}</span>
                   </span>
                 </div>
@@ -347,12 +365,12 @@ export default function SpinToWinModal() {
                     type="text"
                     readOnly
                     value={activeReward.code}
-                    className="w-full text-center font-mono font-black text-sm tracking-widest bg-black/60 border border-accent-gold/40 rounded-xl py-2 text-white"
+                    className="w-full text-center font-mono font-black text-sm tracking-widest bg-white border border-amber-300 rounded-xl py-2 text-ink-900 shadow-xs"
                   />
                   <button
                     type="button"
                     onClick={handleCopyCode}
-                    className="px-4 py-2 bg-accent-gold hover:bg-amber-400 text-ink-950 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer shadow-md"
+                    className="px-4 py-2 bg-[#0E0E0E] hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer shadow-sm"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     <span>{copied ? "COPIED" : "COPY"}</span>
@@ -364,7 +382,7 @@ export default function SpinToWinModal() {
                     type="button"
                     onClick={handleSpin}
                     disabled={isSpinning}
-                    className="text-[11px] text-gray-400 hover:text-white uppercase font-bold tracking-wider underline cursor-pointer"
+                    className="text-[11px] text-gray-500 hover:text-black uppercase font-bold tracking-wider underline cursor-pointer"
                   >
                     Try another spin ({remainingSpins} left)
                   </button>
@@ -377,7 +395,7 @@ export default function SpinToWinModal() {
                   disabled={isSpinning || remainingSpins <= 0}
                   onClick={handleSpin}
                   className={cn(
-                    "w-full py-3.5 bg-gradient-to-r from-accent-gold via-amber-400 to-yellow-600 hover:brightness-110 text-ink-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-[0.99] cursor-pointer",
+                    "w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 hover:brightness-105 text-ink-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-[0.99] cursor-pointer",
                     (isSpinning || remainingSpins <= 0) && "opacity-50 cursor-not-allowed"
                   )}
                 >
@@ -387,7 +405,7 @@ export default function SpinToWinModal() {
                     ? `SPIN TO WIN NOW (${remainingSpins}/${maxSpins} SPINS LEFT)`
                     : "DAILY SPINS EXHAUSTED"}
                 </button>
-                <p className="text-[10px] text-gray-500">
+                <p className="text-[10px] text-gray-400">
                   Each customer is eligible for {maxSpins} spins per session. Unlocked vouchers are valid for 10 minutes.
                 </p>
               </div>

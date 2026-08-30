@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { BannerSlide } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +19,6 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % (totalSlides || 1));
-  }, [totalSlides]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + totalSlides) % (totalSlides || 1));
   }, [totalSlides]);
 
   useEffect(() => {
@@ -68,32 +64,6 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
               </Link>
             );
           })}
-
-          {/* Navigation Arrows (Desktop) */}
-          {totalSlides > 1 && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  prevSlide();
-                }}
-                className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white backdrop-blur-xs items-center justify-center transition-all"
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  nextSlide();
-                }}
-                className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/60 text-white backdrop-blur-xs items-center justify-center transition-all"
-                aria-label="Next slide"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </>
-          )}
 
           {/* Dot Indicators */}
           {totalSlides > 1 && (

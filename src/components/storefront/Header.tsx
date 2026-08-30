@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, ShoppingBag, Menu, X, User } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, User } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useUIStore } from "@/store/useUIStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -60,14 +60,13 @@ export default function Header() {
     headerCategorySlugs.includes(c.slug)
   );
 
-  // Hide sub-category bar on checkout and product pages if needed
-  const isCheckoutOrProduct =
-    pathname?.startsWith("/checkout") ||
-    pathname?.startsWith("/order-confirmation");
+  // Hide on checkout & admin routes if desired
+  const isCheckout = pathname?.startsWith("/checkout") || pathname?.startsWith("/order-confirmation");
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-line-100 shadow-2xs">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md transition-all">
         {/* Optional Top Announcement Bar */}
         {announcement.enabled && announcement.text && (
           <div className="bg-[#0A0A0A] text-white text-[10px] sm:text-[11px] font-medium tracking-wider text-center py-1 px-4">
@@ -75,122 +74,129 @@ export default function Header() {
           </div>
         )}
 
-        {/* Main Header Bar */}
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-1.5 pb-1 sm:pt-2 sm:pb-1.5">
-          <div className="bg-[#0E0E0E] text-white rounded-xl sm:rounded-full px-3 sm:px-6 h-11 sm:h-14 flex items-center justify-between shadow-md">
-            {/* Left: Mobile Hamburger / Brand Logo */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="lg:hidden p-1 text-white hover:text-gray-300 focus:outline-none cursor-pointer"
-                aria-label="Toggle navigation menu"
-              >
-                {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />}
-              </button>
-
-              <Link href="/" className="inline-block group">
-                <span className="font-heading text-base sm:text-2xl font-black tracking-[0.06em] uppercase text-white block">
-                  Dream Fashion
-                </span>
-              </Link>
-            </div>
-
-            {/* Center Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-6 text-[13px] font-medium tracking-wide">
-              <Link href="/" className="text-gray-200 hover:text-white transition-colors">
-                Home
-              </Link>
-              {activeHeaderCategories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/category/${cat.slug}`}
-                  className="text-gray-200 hover:text-white transition-colors uppercase text-xs tracking-wider"
+        {/* Main Floating Nav Capsule (matching media_1788049780292.png) */}
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-1 sm:pt-2 pb-1">
+          <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border border-black/10">
+            {/* Top Primary Bar (Solid Black) */}
+            <div className="bg-[#0A0A0A] text-white px-3.5 sm:px-6 h-11 sm:h-14 flex items-center justify-between">
+              {/* Left: Mobile Hamburger / Brand Logo */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleMobileMenu}
+                  className="lg:hidden p-1 text-white hover:text-gray-300 focus:outline-none cursor-pointer"
+                  aria-label="Toggle navigation menu"
                 >
-                  {cat.name}
+                  {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 stroke-[2.5]" />}
+                </button>
+
+                <Link href="/" className="inline-block group">
+                  <span className="font-heading text-lg sm:text-2xl font-black tracking-[0.06em] italic uppercase text-white block">
+                    Dream Fashion
+                  </span>
                 </Link>
-              ))}
-              <Link href="/shop" className="text-gray-200 hover:text-white transition-colors">
-                Shop All
-              </Link>
-            </nav>
+              </div>
 
-            {/* Right: Search, Account, Cart */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <button
-                onClick={openSearch}
-                className="p-1 sm:p-1.5 text-white hover:text-gray-300 transition-colors cursor-pointer"
-                aria-label="Search"
-              >
-                <Search className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
-              </button>
-
-              <Link
-                href="/account"
-                className="p-1 sm:p-1.5 text-white hover:text-gray-300 transition-colors hidden sm:inline-block"
-                aria-label="User Account"
-              >
-                <User className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
-              </Link>
-
-              {/* Shopping Bag Button */}
-              <Link
-                href="/checkout"
-                className="flex items-center gap-1.5 bg-white text-[#0E0E0E] hover:bg-gray-100 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-transform active:scale-95 shadow-sm"
-                aria-label="Shopping Bag"
-              >
-                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                <span className="font-heading font-black">{totalCartCount}</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* MOBILE / PHONE SECONDARY CATEGORY STRIP */}
-        {!isCheckoutOrProduct && (
-          <div className="lg:hidden border-t border-line-100 bg-bg-subtle/80 backdrop-blur-xs px-2.5 py-1.5 overflow-x-auto no-scrollbar">
-            <div className="flex items-center space-x-1.5 whitespace-nowrap">
-              <Link
-                href="/"
-                className={cn(
-                  "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shrink-0",
-                  pathname === "/"
-                    ? "bg-[#0E0E0E] text-white shadow-xs"
-                    : "bg-white text-ink-800 border border-line-200 hover:bg-line-100"
-                )}
-              >
-                Home
-              </Link>
-              {activeHeaderCategories.map((cat) => {
-                const isActive = pathname === `/category/${cat.slug}`;
-                return (
+              {/* Center Desktop Links */}
+              <nav className="hidden lg:flex items-center space-x-7 text-[13px] font-medium tracking-wide">
+                <Link href="/" className={cn("transition-colors", pathname === "/" ? "text-white font-bold" : "text-gray-300 hover:text-white")}>
+                  Home
+                </Link>
+                {activeHeaderCategories.map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/category/${cat.slug}`}
                     className={cn(
-                      "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shrink-0",
-                      isActive
-                        ? "bg-[#0E0E0E] text-white shadow-xs"
-                        : "bg-white text-ink-800 border border-line-200 hover:bg-line-100"
+                      "transition-colors uppercase text-xs tracking-wider",
+                      pathname === `/category/${cat.slug}` ? "text-white font-bold" : "text-gray-300 hover:text-white"
                     )}
                   >
                     {cat.name}
                   </Link>
-                );
-              })}
-              <Link
-                href="/shop"
-                className={cn(
-                  "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shrink-0",
-                  pathname === "/shop"
-                    ? "bg-[#0E0E0E] text-white shadow-xs"
-                    : "bg-white text-ink-800 border border-line-200 hover:bg-line-100"
-                )}
-              >
-                Shop All
-              </Link>
+                ))}
+                <Link href="/shop" className={cn("transition-colors", pathname === "/shop" ? "text-white font-bold" : "text-gray-300 hover:text-white")}>
+                  Shop All
+                </Link>
+              </nav>
+
+              {/* Right: Search, Account, Cart */}
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <button
+                  onClick={openSearch}
+                  className="p-1.5 text-white hover:text-gray-300 transition-colors cursor-pointer"
+                  aria-label="Search"
+                >
+                  <Search className="w-5 h-5 stroke-[2]" />
+                </button>
+
+                <Link
+                  href="/account"
+                  className="p-1.5 text-white hover:text-gray-300 transition-colors hidden sm:inline-block"
+                  aria-label="User Account"
+                >
+                  <User className="w-5 h-5 stroke-[2]" />
+                </Link>
+
+                {/* Shopping Bag Button */}
+                <Link
+                  href="/checkout"
+                  className="relative p-1.5 text-white hover:text-gray-300 transition-transform active:scale-95"
+                  aria-label="Shopping Cart"
+                >
+                  <ShoppingCart className="w-5 h-5 stroke-[2]" />
+                  {totalCartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-accent-red text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                      {totalCartCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
             </div>
+
+            {/* Bottom Secondary Strip (Matching media_1788049780292.png) */}
+            {!isCheckout && (
+              <div className="bg-[#EBEBEB] text-[#222222] px-4 sm:px-6 py-2 overflow-x-auto no-scrollbar border-t border-black/5">
+                <div className="flex items-center space-x-6 sm:space-x-8 text-xs sm:text-[13px] font-medium tracking-wide whitespace-nowrap">
+                  <Link
+                    href="/"
+                    className={cn(
+                      "transition-colors hover:text-black",
+                      pathname === "/" ? "font-bold text-black" : "text-gray-700"
+                    )}
+                  >
+                    Home
+                  </Link>
+
+                  {/* Top categories (e.g. Shirt, Polos, T-Shirt, Pant) */}
+                  {activeHeaderCategories.slice(0, 4).map((cat) => {
+                    const isActive = pathname === `/category/${cat.slug}`;
+                    return (
+                      <Link
+                        key={cat.id}
+                        href={`/category/${cat.slug}`}
+                        className={cn(
+                          "transition-colors hover:text-black uppercase text-[11px] sm:text-xs",
+                          isActive ? "font-bold text-black" : "text-gray-700"
+                        )}
+                      >
+                        {cat.name.replace("Collection", "").replace("Men's", "").trim()}
+                      </Link>
+                    );
+                  })}
+
+                  <Link
+                    href="/shop"
+                    className={cn(
+                      "transition-colors hover:text-black uppercase text-[11px] sm:text-xs",
+                      pathname === "/shop" ? "font-bold text-black" : "text-gray-700"
+                    )}
+                  >
+                    Shop All
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </header>
 
       {/* Mobile Drawer Navigation Menu */}
