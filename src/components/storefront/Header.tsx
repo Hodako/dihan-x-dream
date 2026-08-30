@@ -60,9 +60,8 @@ export default function Header() {
     headerCategorySlugs.includes(c.slug)
   );
 
-  // Hide on checkout & admin routes if desired
   const isCheckout = pathname?.startsWith("/checkout") || pathname?.startsWith("/order-confirmation");
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/who/hodako")) return null;
 
   return (
     <>

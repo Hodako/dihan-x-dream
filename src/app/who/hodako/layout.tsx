@@ -53,18 +53,18 @@ export default function AdminLayout({
   const [loginError, setLoginError] = useState("");
 
   const navItems = [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Products", href: "/admin/products", icon: ShoppingBag },
-    { label: "Categories & Nav", href: "/admin/categories", icon: Layers },
-    { label: "Orders", href: "/admin/orders", icon: Package },
-    { label: "Delivery & Logistics", href: "/admin/logistics", icon: Truck },
-    { label: "Banners & Lookbook", href: "/admin/banners", icon: ImageIcon },
-    { label: "Coupons", href: "/admin/coupons", icon: Tag },
-    { label: "Lucky Spinner", href: "/admin/spinner", icon: Sparkles },
-    { label: "Theme & UI", href: "/admin/theme", icon: Palette },
-    { label: "Footer Info", href: "/admin/footer", icon: FileText },
-    { label: "Reviews", href: "/admin/reviews", icon: Star },
-    { label: "Users & Access", href: "/admin/users", icon: Users },
+    { label: "Dashboard", href: "/who/hodako", icon: LayoutDashboard },
+    { label: "Products", href: "/who/hodako/products", icon: ShoppingBag },
+    { label: "Categories & Nav", href: "/who/hodako/categories", icon: Layers },
+    { label: "Orders", href: "/who/hodako/orders", icon: Package },
+    { label: "Delivery & Logistics", href: "/who/hodako/logistics", icon: Truck },
+    { label: "Banners & Lookbook", href: "/who/hodako/banners", icon: ImageIcon },
+    { label: "Coupons", href: "/who/hodako/coupons", icon: Tag },
+    { label: "Lucky Spinner", href: "/who/hodako/spinner", icon: Sparkles },
+    { label: "Theme & UI", href: "/who/hodako/theme", icon: Palette },
+    { label: "Footer Info", href: "/who/hodako/footer", icon: FileText },
+    { label: "Reviews", href: "/who/hodako/reviews", icon: Star },
+    { label: "Users & Access", href: "/who/hodako/users", icon: Users },
   ];
 
   const handleSeedDatabase = async () => {

@@ -212,35 +212,35 @@ export default function AdminDashboardPage() {
           </h2>
           <div className="grid grid-cols-1 gap-2.5">
             <Link
-              href="/admin/products"
+              href="/who/hodako/products"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
               <span>+ Add New Product (with ImgBB Upload)</span>
               <ArrowRight className="w-4 h-4 text-admin-accent" />
             </Link>
             <Link
-              href="/admin/orders"
+              href="/who/hodako/orders"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
               <span>Inspect Orders & Dispatch to Steadfast</span>
               <ArrowRight className="w-4 h-4 text-admin-accent" />
             </Link>
             <Link
-              href="/admin/spinner"
+              href="/who/hodako/spinner"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
               <span>Configure Lucky Spin-To-Win Wheel</span>
               <Sparkles className="w-4 h-4 text-accent-gold" />
             </Link>
             <Link
-              href="/admin/categories"
+              href="/who/hodako/categories"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
               <span>Top Header Categories & Image CMS</span>
               <Layers className="w-4 h-4 text-admin-info" />
             </Link>
             <Link
-              href="/admin/theme"
+              href="/who/hodako/theme"
               className="p-3 bg-bg-subtle hover:bg-admin-accent-soft text-xs font-semibold text-admin-text-primary-light rounded border border-line-200 flex items-center justify-between transition-colors"
             >
               <span>Theme & UI Customizer</span>

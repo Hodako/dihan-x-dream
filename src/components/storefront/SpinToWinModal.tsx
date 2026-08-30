@@ -118,7 +118,8 @@ export default function SpinToWinModal() {
   if (
     pathname?.startsWith("/product") ||
     pathname?.startsWith("/checkout") ||
-    pathname?.startsWith("/admin")
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/who/hodako")
   ) {
     return null;
   }

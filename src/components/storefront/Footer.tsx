@@ -246,9 +246,7 @@ export default function Footer() {
         {/* Payment Methods */}
         {footer.showPaymentIcons && (
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <div className="h-9 px-3 bg-white rounded-md flex items-center justify-center shadow-xs border border-white/20">
-              <img src="/images/payments/bkash.svg" alt="bKash" className="h-6 w-auto object-contain" />
-            </div>
+            <img src="/images/payments/only-bkash-icon.svg" alt="bKash" className="h-8 sm:h-9 w-auto object-contain" />
             <img src="/images/payments/cod.png" alt="Cash on Delivery" className="h-10 w-auto object-contain" />
           </div>
         )}

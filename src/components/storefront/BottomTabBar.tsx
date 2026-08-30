@@ -15,8 +15,8 @@ export default function BottomTabBar() {
   const isShop = pathname.startsWith("/shop") || pathname.startsWith("/category");
   const isAccount = pathname.startsWith("/account");
 
-  // Hide on admin routes
-  if (pathname.startsWith("/admin")) return null;
+  // Hide on admin and secret portal routes
+  if (pathname.startsWith("/admin") || pathname.startsWith("/who/hodako")) return null;
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-line-200 shadow-lg py-1.5 px-4 flex items-center justify-around">
