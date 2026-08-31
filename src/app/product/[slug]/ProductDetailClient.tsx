@@ -464,7 +464,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
                         : "border-line-200 opacity-70 hover:opacity-100"
                     )}
                   >
-                    <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover object-top" sizes="64px" />
+                    <Image src={img} alt={`Thumbnail ${idx}`} fill unoptimized className="object-cover object-top" sizes="64px" />
                   </button>
                 ))}
               </div>
@@ -480,6 +480,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
                 alt={product.title}
                 fill
                 priority
+                unoptimized
                 sizes="(max-width: 1024px) 100vw, 55vw"
                 className="object-cover object-top transition-transform duration-500 hover:scale-105"
               />
@@ -519,7 +520,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
                     selectedImageIndex === idx ? "border-ink-900 shadow-xs" : "border-line-200 opacity-60"
                   )}
                 >
-                  <Image src={img} alt="Thumb" fill className="object-cover object-top" sizes="48px" />
+                  <Image src={img} alt="Thumb" fill unoptimized className="object-cover object-top" sizes="48px" />
                 </button>
               ))}
             </div>

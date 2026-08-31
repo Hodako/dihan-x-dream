@@ -115,7 +115,7 @@ export default function ProductRail({
                 </div>
               ))
             ) : (
-              products.map((product) => (
+              products.map((product, idx) => (
                 <div
                   key={product.id}
                   className="w-[160px] sm:w-[220px] md:w-[260px] shrink-0 transition-transform duration-300 ease-out"
@@ -124,7 +124,7 @@ export default function ProductRail({
                     transform: `rotateY(${tiltAngle}deg)`,
                   }}
                 >
-                  <ProductCard product={product} />
+                  <ProductCard product={product} priority={idx < 3} />
                 </div>
               ))
             )}

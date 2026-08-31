@@ -46,24 +46,19 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* 3:4 Aspect Ratio Portrait Container with Instant Skeleton Placeholder */}
+      {/* 3:4 Aspect Ratio Portrait Container with Smooth Placeholder */}
       <div className="relative aspect-3/4 w-full bg-line-100 overflow-hidden pointer-events-auto">
-        {!imageLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-r from-line-100 via-line-200 to-line-100 animate-pulse" />
-        )}
-
         <Image
           src={primaryImage}
           alt={product.title}
           fill
-          sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
+          unoptimized
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          onLoad={() => setImageLoaded(true)}
           className={cn(
-            "object-cover object-top transition-all duration-400 ease-out",
-            imageLoaded ? "opacity-100" : "opacity-0",
+            "object-cover object-top transition-transform duration-300 ease-out",
             isHovered && secondaryImage !== primaryImage ? "hidden sm:block opacity-0" : "",
             isSoldOut && "grayscale-[35%]"
           )}
@@ -74,11 +69,12 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             src={secondaryImage}
             alt={`${product.title} alternate`}
             fill
-            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
+            unoptimized
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading="lazy"
             decoding="async"
             className={cn(
-              "object-cover object-top transition-opacity duration-400 ease-out absolute inset-0 hidden sm:block",
+              "object-cover object-top transition-opacity duration-300 ease-out absolute inset-0 hidden sm:block",
               isHovered ? "opacity-100 scale-[1.02]" : "opacity-0 scale-100",
               isSoldOut && "grayscale-[35%]"
             )}

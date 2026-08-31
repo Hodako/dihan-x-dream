@@ -31,6 +31,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://i.ibb.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://i.ibb.co" />
+      </head>
       <body
         className="font-sans antialiased text-ink-900 bg-white min-h-screen flex flex-col selection:bg-ink-900 selection:text-white"
         suppressHydrationWarning
