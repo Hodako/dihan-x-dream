@@ -107,7 +107,7 @@ export default function CartDrawer() {
                   <div>
                     <div className="flex items-start justify-between">
                       <Link
-                        href={`/product/${item.slug}`}
+                        href={`/product/${item.productId || item.slug}`}
                         onClick={closeCart}
                         className="text-xs font-medium text-ink-900 hover:underline line-clamp-1"
                       >

@@ -31,18 +31,18 @@ interface ProductDetailClientProps {
 
 function matchProduct(list: Product[], rawSlug: string): Product | null {
   if (!rawSlug || !list || list.length === 0) return null;
-  const decoded = decodeURIComponent(rawSlug).toLowerCase().trim();
   const raw = rawSlug.trim();
-  return (
-    list.find(
-      (p) =>
-        (p.slug && p.slug.toLowerCase().trim() === decoded) ||
-        (p.slug && p.slug.trim() === raw) ||
-        p.id === raw ||
-        p.id === decoded ||
-        (p.id && p.id.toLowerCase().trim() === decoded)
-    ) || null
-  );
+  const decoded = decodeURIComponent(rawSlug).toLowerCase().trim();
+
+  // 1. Exact ID match (Highest Priority)
+  const byId = list.find((p) => p.id === raw || p.id === decoded || (p.id && p.id.toLowerCase().trim() === decoded));
+  if (byId) return byId;
+
+  // 2. Exact Slug match
+  const bySlug = list.find((p) => p.slug && (p.slug === raw || p.slug.toLowerCase().trim() === decoded));
+  if (bySlug) return bySlug;
+
+  return null;
 }
 
 export default function ProductDetailClient({ slug }: ProductDetailClientProps) {
@@ -52,6 +52,10 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   const [logistics, setLogistics] = useState<LogisticsSettings>(INITIAL_LOGISTICS_SETTINGS);
 
   useEffect(() => {
+    // Reset state on slug change
+    setProductData(null);
+    setLoading(true);
+
     // 1. Instant check in local storage
     if (typeof window !== "undefined") {
       const storedLogistics = localStorage.getItem("dream_logistics_settings");
@@ -90,9 +94,21 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
             if (data.settings) setLogistics(data.settings);
           }
         } catch (e) {}
+
         const decoded = decodeURIComponent(slug).trim();
 
-        // 1. Query by exact slug
+        // 1. Direct Document ID lookup (Highest Priority - instant & 100% exact)
+        try {
+          const docRef = await getDoc(doc(db, "products", slug));
+          if (docRef.exists()) {
+            const found = { id: docRef.id, ...docRef.data() } as Product;
+            setProductData(found);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {}
+
+        // 2. Query by exact slug
         const q1 = query(collection(db, "products"), where("slug", "==", slug));
         const snap1 = await getDocs(q1);
         if (!snap1.empty) {
@@ -103,7 +119,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
           return;
         }
 
-        // 2. Query by decoded slug if different
+        // 3. Query by decoded slug if different
         if (decoded !== slug) {
           const q2 = query(collection(db, "products"), where("slug", "==", decoded));
           const snap2 = await getDocs(q2);
@@ -114,15 +130,6 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
             setLoading(false);
             return;
           }
-        }
-
-        // 3. Fallback to direct document id lookup
-        const docRef = await getDoc(doc(db, "products", slug));
-        if (docRef.exists()) {
-          const found = { id: docRef.id, ...docRef.data() } as Product;
-          setProductData(found);
-          setLoading(false);
-          return;
         }
 
         // 4. Query all products and match in memory

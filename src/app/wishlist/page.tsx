@@ -1,18 +1,44 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Heart, ArrowRight, ShoppingBag } from "lucide-react";
 import { useWishlistStore } from "@/store/useWishlistStore";
-import { INITIAL_PRODUCTS } from "@/lib/seedData";
+import { Product } from "@/types";
 import ProductCard from "@/components/storefront/ProductCard";
 
 export default function WishlistPage() {
   const { productIds, clearWishlist } = useWishlistStore();
+  const [catalog, setCatalog] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+      const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+      let all: Product[] = [...localCustom];
+      for (const p of cachedCatalog) {
+        if (!all.some((item) => item.id === p.id)) all.push(p);
+      }
+      setCatalog(all);
+    }
+
+    async function loadFirestore() {
+      try {
+        const { collection, getDocs, limit, query } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        const snap = await getDocs(query(collection(db, "products"), limit(50)));
+        if (!snap.empty) {
+          const prods = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+          setCatalog(prods);
+        }
+      } catch (e) {}
+    }
+    loadFirestore();
+  }, []);
 
   const favoriteProducts = useMemo(() => {
-    return INITIAL_PRODUCTS.filter((p) => productIds.includes(p.id));
-  }, [productIds]);
+    return catalog.filter((p) => productIds.includes(p.id));
+  }, [productIds, catalog]);
 
   return (
     <div className="pt-[106px] sm:pt-[124px] pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[70vh]">

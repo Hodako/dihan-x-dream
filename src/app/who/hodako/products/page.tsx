@@ -239,8 +239,8 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const prodSlug = slug.trim() ? slugify(slug) : slugify(title);
     const prodId = editingProduct ? editingProduct.id : `prod_${Date.now()}`;
+    const prodSlug = slug.trim() ? slugify(slug) : `${slugify(title)}-${prodId.slice(-6)}`;
 
     const newProduct: Product = {
       id: prodId,
