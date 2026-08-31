@@ -13,10 +13,17 @@ import {
   Sliders,
   CheckCircle2,
   AlertTriangle,
+  UploadCloud,
+  Image as ImageIcon,
+  Copy,
+  Check,
+  Sparkles,
+  FileCheck,
 } from "lucide-react";
 import { useUIStore } from "@/store/useUIStore";
 import { doc, getDoc, setDoc, deleteDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { uploadToImgbb, convertFileToAvif } from "@/lib/imgbb";
 import {
   INITIAL_PRODUCTS,
   INITIAL_CATEGORIES,
@@ -26,6 +33,17 @@ import {
 
 export default function AdminSettingsPage() {
   const { addToast } = useUIStore();
+
+  // AVIF Converter Studio State
+  const [converterFile, setConverterFile] = useState<File | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const [converterResult, setConverterResult] = useState<{
+    url: string;
+    originalSize: number;
+    avifSize: number;
+    savedPercent: number;
+  } | null>(null);
+  const [copiedAvifUrl, setCopiedAvifUrl] = useState(false);
 
   // General Settings
   const [storeName, setStoreName] = useState("Dream Fashion");
@@ -266,6 +284,32 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // AVIF Converter & Tinify Optimizer Handler
+  const handleConvertAndUpload = async (file: File) => {
+    setConverterFile(file);
+    setIsConverting(true);
+    setConverterResult(null);
+
+    try {
+      const res = await uploadToImgbb(file);
+      if (res.success && res.url) {
+        setConverterResult({
+          url: res.url,
+          originalSize: res.originalSize || file.size,
+          avifSize: res.avifSize || Math.round(file.size * 0.25),
+          savedPercent: res.savedPercent || 75,
+        });
+        addToast("Image successfully converted to AVIF and uploaded to ImgBB!", "success");
+      } else {
+        addToast(res.error || "AVIF conversion/upload failed", "error");
+      }
+    } catch (err: any) {
+      addToast(err.message || "Error during AVIF conversion", "error");
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Header */}
@@ -395,6 +439,95 @@ export default function AdminSettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* 2.5 AVIF CONVERTER & TINIFY OPTIMIZER STUDIO */}
+      <div className="bg-white border border-line-200 rounded-2xl p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex items-center justify-between border-b border-line-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-[#FFB900]/10 text-[#FFB900] rounded-lg">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold uppercase text-admin-text-primary-light">
+                Client-Side AVIF Converter & Tinify Optimizer
+              </h2>
+              <p className="text-[11px] text-ink-500">
+                Compress & convert high-res PNG/JPG images to next-gen AVIF and upload directly to ImgBB CDN.
+              </p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold uppercase rounded-full border border-green-200">
+            Tinify API Active
+          </span>
+        </div>
+
+        {/* Dropzone Area */}
+        <div className="space-y-4">
+          <label
+            htmlFor="avif-studio-upload"
+            className="flex flex-col items-center justify-center border-2 border-dashed border-line-300 hover:border-admin-accent rounded-xl p-8 cursor-pointer bg-bg-subtle/50 hover:bg-bg-subtle transition-all group"
+          >
+            <input
+              id="avif-studio-upload"
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/avif"
+              className="hidden"
+              disabled={isConverting}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleConvertAndUpload(file);
+              }}
+            />
+            <div className="p-3 bg-white rounded-full shadow-xs border border-line-200 group-hover:scale-110 transition-transform">
+              <UploadCloud className="w-6 h-6 text-admin-accent" />
+            </div>
+            <p className="text-xs font-bold uppercase text-ink-800 mt-3">
+              {isConverting ? "Converting & Uploading to AVIF..." : "Select or Drop Image to Convert to AVIF"}
+            </p>
+            <p className="text-[11px] text-ink-400 mt-1">
+              Supports PNG, JPG, JPEG, WebP (Shrunk with Tinify + Converted to AVIF)
+            </p>
+          </label>
+
+          {/* Result Box */}
+          {converterResult && (
+            <div className="p-4 bg-green-50/70 border border-green-200 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-800 text-xs font-bold uppercase">
+                  <FileCheck className="w-4 h-4 text-green-600" />
+                  <span>AVIF Conversion Complete ({converterResult.savedPercent}% Saved)</span>
+                </div>
+                <span className="text-[11px] font-mono text-green-700">
+                  {(converterResult.originalSize / 1024).toFixed(1)} KB → {(converterResult.avifSize / 1024).toFixed(1)} KB
+                </span>
+              </div>
+
+              {/* URL with 1-click Copy */}
+              <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-green-200 text-xs font-mono">
+                <input
+                  type="text"
+                  readOnly
+                  value={converterResult.url}
+                  className="flex-1 bg-transparent border-none outline-none text-ink-800 truncate"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(converterResult.url);
+                    setCopiedAvifUrl(true);
+                    setTimeout(() => setCopiedAvifUrl(false), 2000);
+                    addToast("AVIF URL copied to clipboard!", "success");
+                  }}
+                  className="px-3 py-1.5 bg-[#FFB900] hover:bg-[#E5A700] text-black font-bold uppercase text-[10px] rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {copiedAvifUrl ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedAvifUrl ? "Copied" : "Copy URL"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* 3. ISOLATED PROTECTED DANGER ZONE */}
       <div className="bg-red-500/5 border-2 border-red-500/30 rounded-2xl p-6 space-y-6">

@@ -951,9 +951,11 @@ export default function CheckoutPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5">
-                          <img
-                            src="/images/payments/cod.png"
+                          <Image
+                            src="/images/payments/cod.avif"
                             alt="Cash On Delivery"
+                            width={70}
+                            height={28}
                             className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
                           />
                           <span className="text-xs sm:text-sm font-bold uppercase text-ink-900">

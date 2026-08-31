@@ -29,66 +29,125 @@ interface ProductDetailClientProps {
   slug: string;
 }
 
+function matchProduct(list: Product[], rawSlug: string): Product | null {
+  if (!rawSlug || !list || list.length === 0) return null;
+  const decoded = decodeURIComponent(rawSlug).toLowerCase().trim();
+  const raw = rawSlug.trim();
+  return (
+    list.find(
+      (p) =>
+        (p.slug && p.slug.toLowerCase().trim() === decoded) ||
+        (p.slug && p.slug.trim() === raw) ||
+        p.id === raw ||
+        p.id === decoded ||
+        (p.id && p.id.toLowerCase().trim() === decoded)
+    ) || null
+  );
+}
+
 export default function ProductDetailClient({ slug }: ProductDetailClientProps) {
   const router = useRouter();
   const [productData, setProductData] = useState<Product | null>(() => {
     if (typeof window !== "undefined") {
       const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-      const foundLocal = localCustom.find((p) => p.slug === slug || p.id === slug);
+      const foundLocal = matchProduct(localCustom, slug);
       if (foundLocal) return foundLocal;
       const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-      const foundCached = allCached.find((p) => p.slug === slug || p.id === slug);
+      const foundCached = matchProduct(allCached, slug);
       if (foundCached) return foundCached;
     }
-    return INITIAL_PRODUCTS.find((p) => p.slug === slug || p.id === slug) || null;
+    return null;
   });
 
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-      if (localCustom.some((p) => p.slug === slug || p.id === slug)) return false;
+      if (matchProduct(localCustom, slug)) return false;
       const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-      if (allCached.some((p) => p.slug === slug || p.id === slug)) return false;
+      if (matchProduct(allCached, slug)) return false;
     }
-    return !INITIAL_PRODUCTS.some((p) => p.slug === slug || p.id === slug);
+    return true;
   });
 
   useEffect(() => {
-    async function loadFirestoreProduct() {
-      // 1. First check local storage cache
-      if (typeof window !== "undefined") {
-        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-        const foundLocal = localCustom.find((p) => p.slug === slug || p.id === slug);
-        if (foundLocal) {
-          setProductData(foundLocal);
-          setLoading(false);
-          return;
-        }
+    // 1. Instant check in local storage
+    if (typeof window !== "undefined") {
+      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+      const foundLocal = matchProduct(localCustom, slug);
+      if (foundLocal) {
+        setProductData(foundLocal);
+        setLoading(false);
+        return;
       }
+      const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+      const foundCached = matchProduct(allCached, slug);
+      if (foundCached) {
+        setProductData(foundCached);
+        setLoading(false);
+        return;
+      }
+    }
 
+    async function loadFirestoreProduct() {
+      setLoading(true);
       try {
         const { collection, getDocs, query, where, doc, getDoc } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
+        const decoded = decodeURIComponent(slug).trim();
 
-        // 2. Query Firestore by slug
-        const q = query(collection(db, "products"), where("slug", "==", slug));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const d = snap.docs[0];
-          setProductData({ id: d.id, ...d.data() } as Product);
-        } else {
-          // 3. Fallback to direct document id lookup
-          const docRef = await getDoc(doc(db, "products", slug));
-          if (docRef.exists()) {
-            setProductData({ id: docRef.id, ...docRef.data() } as Product);
+        // 1. Query by exact slug
+        const q1 = query(collection(db, "products"), where("slug", "==", slug));
+        const snap1 = await getDocs(q1);
+        if (!snap1.empty) {
+          const d = snap1.docs[0];
+          const found = { id: d.id, ...d.data() } as Product;
+          setProductData(found);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Query by decoded slug if different
+        if (decoded !== slug) {
+          const q2 = query(collection(db, "products"), where("slug", "==", decoded));
+          const snap2 = await getDocs(q2);
+          if (!snap2.empty) {
+            const d = snap2.docs[0];
+            const found = { id: d.id, ...d.data() } as Product;
+            setProductData(found);
+            setLoading(false);
+            return;
           }
         }
+
+        // 3. Fallback to direct document id lookup
+        const docRef = await getDoc(doc(db, "products", slug));
+        if (docRef.exists()) {
+          const found = { id: docRef.id, ...docRef.data() } as Product;
+          setProductData(found);
+          setLoading(false);
+          return;
+        }
+
+        // 4. Query all products and match in memory
+        const allSnap = await getDocs(collection(db, "products"));
+        if (!allSnap.empty) {
+          const prods = allSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+          const matched = matchProduct(prods, slug);
+          if (matched) {
+            setProductData(matched);
+            setLoading(false);
+            return;
+          }
+        }
+
+        setProductData(null);
       } catch (e) {
         console.error("Firestore product load error:", e);
       } finally {
         setLoading(false);
       }
     }
+
     loadFirestoreProduct();
   }, [slug]);
 
@@ -96,18 +155,20 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
-
-  useEffect(() => {
-    if (product?.variants?.[0]) {
-      setSelectedColor(product.variants[0].color);
-      setSelectedSize(product.variants[0].size);
-    }
-  }, [product]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    if (product?.variants && product.variants.length > 0) {
+      setSelectedColor(product.variants[0].color);
+      setSelectedSize(product.variants[0].size);
+      setSelectedImageIndex(0);
+      setQuantity(1);
+    }
+  }, [product]);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);

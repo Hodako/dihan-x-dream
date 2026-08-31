@@ -211,7 +211,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         {/* Hero Banner Tile (Compact, Luxury Editorial) */}
         <div className="relative aspect-[21/9] sm:aspect-[24/6] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#0A0A0A] shadow-md border border-line-200">
           <Image
-            src={currentCategory.imageUrl || "/images/banners/hero_1.jpg"}
+            src={currentCategory.imageUrl || "/images/banners/hero_1.avif"}
             alt={currentCategory.name}
             fill
             priority
