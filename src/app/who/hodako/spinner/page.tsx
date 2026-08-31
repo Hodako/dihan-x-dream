@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Plus, Trash2, Edit2, Save, Check, RefreshCw, AlertCircle, HelpCircle } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, Check, RefreshCw, AlertCircle, HelpCircle } from "lucide-react";
 import { SpinnerSlice, SpinnerSettings } from "@/types";
 import { useUIStore } from "@/store/useUIStore";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import SpinIcon from "@/components/icons/SpinIcon";
 
 const INITIAL_ADMIN_SLICES: SpinnerSlice[] = [
   { id: "s1", label: "10% OFF", prefix: "DF-10", discountText: "10% Discount", discountType: "percent", discountValue: 10, color: "#0E0E0E", textColor: "#FFFFFF", quota: 500, wonCount: 0 },
@@ -207,8 +208,9 @@ export default function AdminSpinnerPage() {
           <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-admin-text-secondary block">
             GAMIFICATION & RETENTION CMS
           </span>
-          <h1 className="font-heading text-2xl sm:text-3xl font-bold uppercase tracking-wider text-admin-text-primary-light mt-1">
-            LUCKY SPINNER SETTINGS
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold uppercase tracking-wider text-admin-text-primary-light mt-1 flex items-center gap-2.5">
+            <SpinIcon className="w-7 h-7" />
+            <span>LUCKY SPINNER SETTINGS</span>
           </h1>
         </div>
 

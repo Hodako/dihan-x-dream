@@ -33,6 +33,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUIStore } from "@/store/useUIStore";
 import { seedFirestoreDatabase } from "@/lib/seedData";
 import { cn } from "@/lib/utils";
+import SpinIcon from "@/components/icons/SpinIcon";
 
 export default function AdminLayout({
   children,
@@ -61,7 +62,7 @@ export default function AdminLayout({
     { label: "Delivery & Logistics", href: "/who/hodako/logistics", icon: Truck },
     { label: "Banners & Lookbook", href: "/who/hodako/banners", icon: ImageIcon },
     { label: "Coupons", href: "/who/hodako/coupons", icon: Tag },
-    { label: "Lucky Spinner", href: "/who/hodako/spinner", icon: Sparkles },
+    { label: "Lucky Spinner", href: "/who/hodako/spinner", icon: SpinIcon },
     { label: "Theme & UI", href: "/who/hodako/theme", icon: Palette },
     { label: "Footer Info", href: "/who/hodako/footer", icon: FileText },
     { label: "Reviews", href: "/who/hodako/reviews", icon: Star },

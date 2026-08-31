@@ -24,6 +24,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { doc, getDoc, setDoc, deleteDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { uploadToImgbb, convertFileToAvif } from "@/lib/imgbb";
+import SpinIcon from "@/components/icons/SpinIcon";
 import {
   INITIAL_PRODUCTS,
   INITIAL_CATEGORIES,
@@ -444,8 +445,8 @@ export default function AdminSettingsPage() {
       <div className="bg-white border border-line-200 rounded-2xl p-6 sm:p-7 shadow-xs space-y-5">
         <div className="flex items-center justify-between border-b border-line-100 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#FFB900]/10 text-[#FFB900] rounded-lg">
-              <Sparkles className="w-5 h-5 text-amber-500" />
+            <div className="p-2 bg-amber-500/10 rounded-lg">
+              <SpinIcon className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-sm font-bold uppercase text-admin-text-primary-light">

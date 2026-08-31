@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { SpinnerSlice, SpinnerSettings } from "@/types";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import SpinIcon from "@/components/icons/SpinIcon";
 
 const DEFAULT_SLICES: SpinnerSlice[] = [
   { id: "s1", label: "10% OFF", prefix: "DF-10", discountText: "10% Discount", discountType: "percent", discountValue: 10, color: "#0E0E0E", textColor: "#FFFFFF" },
@@ -223,9 +224,10 @@ export default function SpinToWinModal() {
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="bg-[#1A1A1A] hover:bg-black text-white rounded-r-lg shadow-2xl py-4 sm:py-5 px-2.5 sm:px-3 flex items-center justify-center transition-all duration-300 group-hover:translate-x-0.5 cursor-pointer select-none border-y border-r border-white/20 active:scale-95"
+              className="bg-[#1A1A1A] hover:bg-black text-white rounded-r-lg shadow-2xl py-3 sm:py-4 px-2 sm:px-2.5 flex flex-col items-center gap-1.5 justify-center transition-all duration-300 group-hover:translate-x-0.5 cursor-pointer select-none border-y border-r border-white/20 active:scale-95"
               aria-label="Open Spin to Win"
             >
+              <SpinIcon className="w-4 h-4 animate-spin [animation-duration:8s]" />
               <span className="[writing-mode:vertical-rl] rotate-180 text-xs sm:text-[13px] font-bold tracking-wider text-white whitespace-nowrap">
                 Spin to win
               </span>
@@ -260,7 +262,7 @@ export default function SpinToWinModal() {
             {/* Header */}
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold uppercase tracking-widest border border-amber-200">
-                <Sparkles className="w-3 h-3 text-amber-600" />
+                <SpinIcon className="w-3.5 h-3.5" />
                 <span>Dream Fashion Rewards</span>
               </div>
               <h2 className="font-heading text-xl sm:text-2xl font-black uppercase tracking-wider text-ink-900">
