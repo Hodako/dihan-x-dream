@@ -315,12 +315,15 @@ export interface HomeSection {
   subtitle?: string;
   active: boolean;
   order: number;
+  align?: "left" | "center" | "right";
   // Product Grid/Rail Filter Configurations:
-  filterType?: "all" | "category" | "featured" | "new" | "trending" | "custom_tag";
+  filterType?: "all" | "category" | "featured" | "new" | "trending" | "custom_tag" | "manual";
   categorySlug?: string;
   customTag?: string;
+  selectedProductIds?: string[];
   viewAllLink?: string;
   limit?: number;
+  gridColumns?: 2 | 3 | 4;
   badgeText?: string;
   // Custom Banner / Promo / Highlight configurations:
   bannerImage?: string;

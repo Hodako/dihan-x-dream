@@ -1,16 +1,19 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Product } from "@/types";
 import ProductCard from "../ProductCard";
+import { cn } from "@/lib/utils";
 
 interface ProductRailProps {
   title: string;
   subtitle?: string;
   viewAllLink: string;
   products: Product[];
+  badgeText?: string;
+  align?: "left" | "center" | "right";
   loading?: boolean;
 }
 
@@ -19,6 +22,8 @@ export default function ProductRail({
   subtitle,
   viewAllLink,
   products,
+  badgeText,
+  align = "left",
   loading = false,
 }: ProductRailProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +37,7 @@ export default function ProductRail({
     const delta = scrollLeft - lastScrollLeft.current;
     lastScrollLeft.current = scrollLeft;
 
-    // Calculate dynamic 3D mobile bend angle based on velocity
+    // Dynamic 3D mobile bend angle based on velocity
     const angle = Math.max(-4, Math.min(4, delta * 0.2));
     setTiltAngle(angle);
 
@@ -48,13 +53,27 @@ export default function ProductRail({
     <section className="py-3 sm:py-8 bg-white relative group overflow-hidden min-h-[260px]">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2.5 sm:mb-4">
-          <div>
+        <div
+          className={cn(
+            "flex flex-wrap gap-2 items-center mb-2.5 sm:mb-4",
+            align === "center"
+              ? "justify-between sm:justify-center text-center relative"
+              : align === "right"
+              ? "justify-between sm:justify-end text-right"
+              : "justify-between text-left"
+          )}
+        >
+          <div className={cn(align === "center" && "mx-auto sm:text-center")}>
+            {badgeText && (
+              <span className="inline-block px-2.5 py-0.5 mb-1 text-[10px] font-bold uppercase tracking-widest text-[#B8955A] bg-[#B8955A]/10 rounded-full">
+                {badgeText}
+              </span>
+            )}
             <h2 className="font-heading text-sm sm:text-xl font-bold tracking-[0.06em] uppercase text-ink-900">
               {title}
             </h2>
             {subtitle && (
-              <p className="hidden sm:block text-xs text-ink-500 mt-0.5 font-light tracking-wide">
+              <p className="text-xs text-ink-500 mt-0.5 font-light tracking-wide">
                 {subtitle}
               </p>
             )}
@@ -62,7 +81,10 @@ export default function ProductRail({
 
           <Link
             href={viewAllLink}
-            className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-ink-900 hover:text-ink-500 transition-colors flex items-center gap-1 group/link active:scale-95"
+            className={cn(
+              "text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-ink-900 hover:text-ink-500 transition-colors flex items-center gap-1 group/link active:scale-95",
+              align === "center" && "sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2"
+            )}
           >
             <span>VIEW ALL</span>
             <ArrowRight className="w-3 h-3 transition-transform group-hover/link:translate-x-1" />
@@ -83,14 +105,12 @@ export default function ProductRail({
               Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="w-[44vw] sm:w-[30vw] md:w-[23vw] lg:w-[21vw] flex-shrink-0"
+                  className="w-[160px] sm:w-[220px] md:w-[260px] shrink-0 bg-white rounded-xl sm:rounded-2xl border border-line-200 overflow-hidden shadow-2xs"
                 >
-                  <div className="flex flex-col bg-white rounded-xl sm:rounded-2xl border border-line-200 overflow-hidden shadow-2xs">
-                    <div className="relative aspect-3/4 w-full bg-gradient-to-r from-line-100 via-line-200 to-line-100 animate-pulse" />
-                    <div className="p-2 sm:p-3.5 space-y-2">
-                      <div className="h-3.5 w-3/4 bg-line-200 rounded animate-pulse" />
-                      <div className="h-4 w-1/3 bg-line-200 rounded animate-pulse" />
-                    </div>
+                  <div className="relative aspect-3/4 w-full bg-gradient-to-r from-line-100 via-line-200 to-line-100 animate-pulse" />
+                  <div className="p-2 sm:p-3.5 space-y-2">
+                    <div className="h-3.5 w-3/4 bg-line-200 rounded animate-pulse" />
+                    <div className="h-4 w-1/3 bg-line-200 rounded animate-pulse" />
                   </div>
                 </div>
               ))
@@ -98,12 +118,11 @@ export default function ProductRail({
               products.map((product) => (
                 <div
                   key={product.id}
+                  className="w-[160px] sm:w-[220px] md:w-[260px] shrink-0 transition-transform duration-300 ease-out"
                   style={{
-                    transform: tiltAngle !== 0 ? `rotateY(${tiltAngle}deg) scale(${1 - Math.abs(tiltAngle) * 0.008})` : undefined,
-                    transition: tiltAngle === 0 ? "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)" : "transform 0.08s ease-out",
                     scrollSnapAlign: "start",
+                    transform: `rotateY(${tiltAngle}deg)`,
                   }}
-                  className="w-[44vw] sm:w-[30vw] md:w-[23vw] lg:w-[21vw] flex-shrink-0"
                 >
                   <ProductCard product={product} />
                 </div>

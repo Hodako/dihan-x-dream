@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import {
   Layers,
   Plus,
@@ -12,7 +13,6 @@ import {
   EyeOff,
   Save,
   Check,
-  Sparkles,
   ShoppingBag,
   Sliders,
   Image as ImageIcon,
@@ -20,20 +20,31 @@ import {
   Tag,
   ShieldCheck,
   Type,
-  ExternalLink,
+  Copy,
+  Search,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  LayoutGrid,
+  CheckSquare,
+  Square,
+  RefreshCw,
 } from "lucide-react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { HomeSection, HomeSectionType, Category } from "@/types";
+import { HomeSection, HomeSectionType, Category, Product } from "@/types";
 import { INITIAL_HOME_SECTIONS, INITIAL_CATEGORIES } from "@/lib/seedData";
 import { useUIStore } from "@/store/useUIStore";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
-const SECTION_TYPE_LABELS: Record<HomeSectionType, { label: string; icon: any; desc: string }> = {
+const SECTION_TYPE_LABELS: Record<
+  HomeSectionType,
+  { label: string; icon: any; desc: string }
+> = {
   hero_carousel: {
     label: "Hero Banner Slider",
     icon: ImageIcon,
-    desc: "Curved main banner carousel at the very top of the storefront",
+    desc: "Curved main banner carousel at the top of the storefront",
   },
   trending_strip: {
     label: "Trending Visual Strip",
@@ -43,7 +54,7 @@ const SECTION_TYPE_LABELS: Record<HomeSectionType, { label: string; icon: any; d
   product_grid: {
     label: "Product Grid",
     icon: ShoppingBag,
-    desc: "2-col mobile to 4-col desktop grid of curated or category products",
+    desc: "2-col to 4-col customizable grid of products with alignment",
   },
   product_rail: {
     label: "Product Slider / Rail",
@@ -81,6 +92,7 @@ export default function SectionsManagerPage() {
   const { addToast } = useUIStore();
   const [sections, setSections] = useState<HomeSection[]>(INITIAL_HOME_SECTIONS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -92,24 +104,34 @@ export default function SectionsManagerPage() {
   const [formType, setFormType] = useState<HomeSectionType>("product_grid");
   const [formTitle, setFormTitle] = useState("");
   const [formSubtitle, setFormSubtitle] = useState("");
-  const [formFilterType, setFormFilterType] = useState<"all" | "category" | "featured" | "new" | "trending" | "custom_tag">("all");
+  const [formAlign, setFormAlign] = useState<"left" | "center" | "right">("left");
+  const [formFilterType, setFormFilterType] = useState<
+    "all" | "category" | "featured" | "new" | "trending" | "custom_tag" | "manual"
+  >("all");
   const [formCategorySlug, setFormCategorySlug] = useState("");
+  const [formCustomTag, setFormCustomTag] = useState("");
+  const [formSelectedProductIds, setFormSelectedProductIds] = useState<string[]>([]);
   const [formViewAllLink, setFormViewAllLink] = useState("/shop");
   const [formLimit, setFormLimit] = useState(8);
+  const [formGridColumns, setFormGridColumns] = useState<2 | 3 | 4>(4);
   const [formBadgeText, setFormBadgeText] = useState("");
   const [formBannerHeading, setFormBannerHeading] = useState("");
   const [formBannerSubtext, setFormBannerSubtext] = useState("");
-  const [formBannerCtaText, setFormBannerCtaText] = useState("SHOP NOW");
+  const [formBannerCtaText, setFormBannerCtaText] = useState("EXPLORE NOW");
   const [formBannerCtaLink, setFormBannerCtaLink] = useState("/shop");
   const [formBannerBgTheme, setFormBannerBgTheme] = useState<"dark" | "gold" | "light" | "red">("dark");
 
+  // Product search inside picker
+  const [productSearch, setProductSearch] = useState("");
+
   useEffect(() => {
-    async function loadSections() {
+    async function loadData() {
+      // 1. Local Cache Check
       if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("dream_home_sections");
-        if (stored) {
+        const storedSections = localStorage.getItem("dream_home_sections");
+        if (storedSections) {
           try {
-            const parsed = JSON.parse(stored);
+            const parsed = JSON.parse(storedSections);
             if (Array.isArray(parsed) && parsed.length > 0) {
               setSections(parsed);
             }
@@ -124,20 +146,48 @@ export default function SectionsManagerPage() {
             }
           } catch (e) {}
         }
+
+        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+        let initialProds = [...localCustom];
+        for (const p of cachedCatalog) {
+          if (!initialProds.some((item) => item.id === p.id)) {
+            initialProds.push(p);
+          }
+        }
+        setProducts(initialProds.filter((p) => !deletedIds.includes(p.id)));
       }
 
+      // 2. Firestore fetch
       try {
-        const snap = await getDoc(doc(db, "settings", "home_sections"));
-        if (snap.exists() && Array.isArray(snap.data().sections)) {
-          const remoteSections = snap.data().sections as HomeSection[];
+        const [secSnap, catSnap, prodSnap] = await Promise.all([
+          getDoc(doc(db, "settings", "home_sections")),
+          getDoc(doc(db, "settings", "categories")),
+          getDocs(collection(db, "products")),
+        ]);
+
+        if (secSnap.exists() && Array.isArray(secSnap.data().sections)) {
+          const remoteSections = secSnap.data().sections as HomeSection[];
           setSections(remoteSections);
           if (typeof window !== "undefined") {
             localStorage.setItem("dream_home_sections", JSON.stringify(remoteSections));
           }
         }
-        const catSnap = await getDoc(doc(db, "settings", "categories"));
+
         if (catSnap.exists() && Array.isArray(catSnap.data().categories)) {
           setCategories(catSnap.data().categories);
+        }
+
+        if (!prodSnap.empty) {
+          const loadedProds = prodSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+          setProducts((prev) => {
+            let merged = [...loadedProds];
+            for (const p of prev) {
+              if (!merged.some((m) => m.id === p.id)) merged.push(p);
+            }
+            return merged;
+          });
         }
       } catch (err) {
       } finally {
@@ -145,7 +195,7 @@ export default function SectionsManagerPage() {
       }
     }
 
-    loadSections();
+    loadData();
   }, []);
 
   const saveSections = async (updatedSections: HomeSection[]) => {
@@ -179,7 +229,6 @@ export default function SectionsManagerPage() {
     const [moved] = list.splice(index, 1);
     list.splice(targetIndex, 0, moved);
 
-    // Re-index order numbers
     const reordered = list.map((item, idx) => ({ ...item, order: idx + 1 }));
     saveSections(reordered);
   };
@@ -195,21 +244,45 @@ export default function SectionsManagerPage() {
     saveSections(filtered);
   };
 
+  const handleDuplicate = (sec: HomeSection) => {
+    const newSec: HomeSection = {
+      ...sec,
+      id: `sec-${Date.now()}`,
+      title: `${sec.title} (Copy)`,
+      order: sections.length + 1,
+    };
+    saveSections([...sections, newSec]);
+    addToast("Duplicated section: " + newSec.title, "success");
+  };
+
   const openCreateModal = (type: HomeSectionType = "product_grid") => {
     setEditingSection(null);
     setFormType(type);
-    setFormTitle(type === "product_grid" ? "Trending Edits" : type === "product_rail" ? "New In Stock" : "Featured Promotion");
+    setFormTitle(
+      type === "product_grid"
+        ? "Trending Edits"
+        : type === "product_rail"
+        ? "New In Stock"
+        : type === "promo_banner"
+        ? "Special Offer"
+        : "Featured Section"
+    );
     setFormSubtitle("");
+    setFormAlign("left");
     setFormFilterType("all");
     setFormCategorySlug("");
+    setFormCustomTag("");
+    setFormSelectedProductIds([]);
     setFormViewAllLink("/shop");
     setFormLimit(8);
+    setFormGridColumns(4);
     setFormBadgeText("");
     setFormBannerHeading("");
     setFormBannerSubtext("");
     setFormBannerCtaText("EXPLORE NOW");
     setFormBannerCtaLink("/shop");
     setFormBannerBgTheme("dark");
+    setProductSearch("");
     setIsModalOpen(true);
   };
 
@@ -218,16 +291,21 @@ export default function SectionsManagerPage() {
     setFormType(sec.type);
     setFormTitle(sec.title);
     setFormSubtitle(sec.subtitle || "");
+    setFormAlign(sec.align || "left");
     setFormFilterType(sec.filterType || "all");
     setFormCategorySlug(sec.categorySlug || "");
+    setFormCustomTag(sec.customTag || "");
+    setFormSelectedProductIds(sec.selectedProductIds || []);
     setFormViewAllLink(sec.viewAllLink || "/shop");
     setFormLimit(sec.limit || 8);
+    setFormGridColumns(sec.gridColumns || 4);
     setFormBadgeText(sec.badgeText || "");
     setFormBannerHeading(sec.bannerHeading || "");
     setFormBannerSubtext(sec.bannerSubtext || "");
     setFormBannerCtaText(sec.bannerCtaText || "EXPLORE NOW");
     setFormBannerCtaLink(sec.bannerCtaLink || "/shop");
     setFormBannerBgTheme(sec.bannerBgTheme || "dark");
+    setProductSearch("");
     setIsModalOpen(true);
   };
 
@@ -246,10 +324,14 @@ export default function SectionsManagerPage() {
               title: formTitle.trim(),
               subtitle: formSubtitle.trim() || undefined,
               type: formType,
+              align: formAlign,
               filterType: formFilterType,
               categorySlug: formFilterType === "category" ? formCategorySlug : undefined,
+              customTag: formFilterType === "custom_tag" ? formCustomTag.trim() : undefined,
+              selectedProductIds: formFilterType === "manual" ? formSelectedProductIds : undefined,
               viewAllLink: formViewAllLink.trim() || "/shop",
               limit: Number(formLimit) || 8,
+              gridColumns: formGridColumns,
               badgeText: formBadgeText.trim() || undefined,
               bannerHeading: formBannerHeading.trim() || undefined,
               bannerSubtext: formBannerSubtext.trim() || undefined,
@@ -268,10 +350,14 @@ export default function SectionsManagerPage() {
         subtitle: formSubtitle.trim() || undefined,
         active: true,
         order: sections.length + 1,
+        align: formAlign,
         filterType: formFilterType,
         categorySlug: formFilterType === "category" ? formCategorySlug : undefined,
+        customTag: formFilterType === "custom_tag" ? formCustomTag.trim() : undefined,
+        selectedProductIds: formFilterType === "manual" ? formSelectedProductIds : undefined,
         viewAllLink: formViewAllLink.trim() || "/shop",
         limit: Number(formLimit) || 8,
+        gridColumns: formGridColumns,
         badgeText: formBadgeText.trim() || undefined,
         bannerHeading: formBannerHeading.trim() || undefined,
         bannerSubtext: formBannerSubtext.trim() || undefined,
@@ -291,6 +377,24 @@ export default function SectionsManagerPage() {
     }
   };
 
+  // Filtered products inside manual selection modal
+  const filteredModalProducts = useMemo(() => {
+    if (!productSearch.trim()) return products;
+    const term = productSearch.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.title?.toLowerCase().includes(term) ||
+        p.category?.toLowerCase().includes(term) ||
+        p.tags?.some((t) => t.toLowerCase().includes(term))
+    );
+  }, [products, productSearch]);
+
+  const toggleProductSelection = (productId: string) => {
+    setFormSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Header */}
@@ -305,7 +409,7 @@ export default function SectionsManagerPage() {
             </h1>
           </div>
           <p className="text-slate-500 text-xs mt-1">
-            Create, reorder, customize, or disable sections displayed on the live homepage.
+            Create multiple sections, organize orders, align alignments, and hand-pick products to showcase on your homepage.
           </p>
         </div>
 
@@ -396,9 +500,23 @@ export default function SectionsManagerPage() {
                     <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono text-[10px] font-bold uppercase">
                       {typeMeta.label}
                     </span>
+                    {section.align && (
+                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase">
+                        Align: {section.align}
+                      </span>
+                    )}
+                    {section.gridColumns && section.type === "product_grid" && (
+                      <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold uppercase">
+                        {section.gridColumns} Cols
+                      </span>
+                    )}
                     {section.filterType && section.filterType !== "all" && (
                       <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold uppercase">
-                        Filter: {section.filterType === "category" ? section.categorySlug : section.filterType}
+                        {section.filterType === "manual"
+                          ? `Manual (${section.selectedProductIds?.length || 0} items)`
+                          : section.filterType === "category"
+                          ? `Category: ${section.categorySlug}`
+                          : section.filterType}
                       </span>
                     )}
                     {!section.active && (
@@ -449,6 +567,15 @@ export default function SectionsManagerPage() {
                   {section.active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
 
+                {/* Duplicate */}
+                <button
+                  onClick={() => handleDuplicate(section)}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                  title="Duplicate Section"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
                 {/* Edit */}
                 <button
                   onClick={() => openEditModal(section)}
@@ -476,7 +603,7 @@ export default function SectionsManagerPage() {
       <div className="flex justify-end pt-4 border-t border-slate-200">
         <button
           onClick={handleResetToCleanDefaults}
-          className="text-xs text-slate-400 hover:text-red-600 font-bold uppercase transition-colors"
+          className="text-xs text-slate-400 hover:text-red-600 font-bold uppercase transition-colors cursor-pointer"
         >
           Reset to Clean Standard Structure
         </button>
@@ -485,82 +612,164 @@ export default function SectionsManagerPage() {
       {/* Edit / Create Section Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-5">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="font-heading text-lg font-black uppercase tracking-wider text-slate-900">
                 {editingSection ? "Edit Storefront Section" : "Add Storefront Section"}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 p-1 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleSaveModal} className="space-y-4 text-xs">
-              {/* Section Type Selector (Only editable on create) */}
-              {!editingSection && (
+              {/* Section Type Selector */}
+              <div>
+                <label className="block font-bold uppercase text-slate-600 mb-1.5">
+                  Section Type
+                </label>
+                <select
+                  value={formType}
+                  onChange={(e) => setFormType(e.target.value as HomeSectionType)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:border-[#FFB900]"
+                >
+                  <option value="product_grid">Product Grid (Customizable Columns & Align)</option>
+                  <option value="product_rail">Product Slider / Rail (Horizontal)</option>
+                  <option value="promo_banner">Promo Callout Banner</option>
+                  <option value="text_banner">Text Highlight Announcement</option>
+                  <option value="trending_strip">Trending Visual Strip (Curved Tiles)</option>
+                  <option value="lookbook">Editorial Lookbook</option>
+                  <option value="trust_row">Trust Badges Row</option>
+                </select>
+              </div>
+
+              {/* Title & Subtitle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold uppercase text-slate-600 mb-1.5">
-                    Section Type
+                  <label className="block font-bold uppercase text-slate-600 mb-1">
+                    Section Headline / Title *
                   </label>
-                  <select
-                    value={formType}
-                    onChange={(e) => setFormType(e.target.value as HomeSectionType)}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:border-[#FFB900]"
-                  >
-                    <option value="product_grid">Product Grid (2-col to 4-col)</option>
-                    <option value="product_rail">Product Slider / Rail (Horizontal)</option>
-                    <option value="promo_banner">Promo Callout Banner</option>
-                    <option value="text_banner">Text Highlight Announcement</option>
-                    <option value="trending_strip">Trending Visual Strip (Curved Tiles)</option>
-                    <option value="lookbook">Editorial Lookbook</option>
-                    <option value="trust_row">Trust Badges Row</option>
-                  </select>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Summer Collection, Signature Polos"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:border-[#FFB900]"
+                  />
                 </div>
-              )}
 
-              {/* Title */}
-              <div>
-                <label className="block font-bold uppercase text-slate-600 mb-1">
-                  Section Headline / Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Featured Products, Signature Polos, Summer Clearance"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:border-[#FFB900]"
-                />
+                <div>
+                  <label className="block font-bold uppercase text-slate-600 mb-1">
+                    Subtitle (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Premium tailored casuals crafted for elegance"
+                    value={formSubtitle}
+                    onChange={(e) => setFormSubtitle(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-[#FFB900]"
+                  />
+                </div>
               </div>
 
-              {/* Subtitle */}
-              <div>
-                <label className="block font-bold uppercase text-slate-600 mb-1">
-                  Subtitle (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Explore our newest tailored button-downs and pique polos"
-                  value={formSubtitle}
-                  onChange={(e) => setFormSubtitle(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-[#FFB900]"
-                />
+              {/* Alignment & Layout Customization */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-slate-600 mb-1">
+                    Header Alignment
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setFormAlign("left")}
+                      className={cn(
+                        "py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition-all cursor-pointer",
+                        formAlign === "left"
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      )}
+                    >
+                      <AlignLeft className="w-3.5 h-3.5" />
+                      <span>Left</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormAlign("center")}
+                      className={cn(
+                        "py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition-all cursor-pointer",
+                        formAlign === "center"
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      )}
+                    >
+                      <AlignCenter className="w-3.5 h-3.5" />
+                      <span>Center</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormAlign("right")}
+                      className={cn(
+                        "py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition-all cursor-pointer",
+                        formAlign === "right"
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      )}
+                    >
+                      <AlignRight className="w-3.5 h-3.5" />
+                      <span>Right</span>
+                    </button>
+                  </div>
+                </div>
+
+                {formType === "product_grid" && (
+                  <div>
+                    <label className="block font-bold uppercase text-slate-600 mb-1">
+                      Grid Desktop Columns
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[2, 3, 4].map((cols) => (
+                        <button
+                          key={cols}
+                          type="button"
+                          onClick={() => setFormGridColumns(cols as any)}
+                          className={cn(
+                            "py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition-all cursor-pointer",
+                            formGridColumns === cols
+                              ? "bg-[#FFB900] text-black border-[#FFB900]"
+                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          )}
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                          <span>{cols} Cols</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Product Filtering (For Product Grid and Product Rail) */}
+              {/* Product Filtering / Manual Product Picker */}
               {(formType === "product_grid" || formType === "product_rail") && (
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                  <span className="font-bold uppercase text-[11px] text-slate-700 block">
-                    Product Filtering Criteria:
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold uppercase text-[11px] text-slate-700">
+                      Product Filtering & Assignment:
+                    </span>
+                    {formFilterType === "manual" && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        {formSelectedProductIds.length} Selected
+                      </span>
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block font-bold uppercase text-slate-500 text-[10px] mb-1">
-                        Filter Source
+                        Product Source Mode
                       </label>
                       <select
                         value={formFilterType}
@@ -568,10 +777,12 @@ export default function SectionsManagerPage() {
                         className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900"
                       >
                         <option value="all">All Store Products</option>
+                        <option value="manual">Manual Pick (Choose Specific Products)</option>
+                        <option value="category">By Category</option>
                         <option value="new">New Arrivals Only</option>
                         <option value="trending">Trending Styles Only</option>
                         <option value="featured">Featured Collection</option>
-                        <option value="category">Specific Category</option>
+                        <option value="custom_tag">By Custom Tag</option>
                       </select>
                     </div>
 
@@ -595,14 +806,29 @@ export default function SectionsManagerPage() {
                       </div>
                     )}
 
+                    {formFilterType === "custom_tag" && (
+                      <div>
+                        <label className="block font-bold uppercase text-slate-500 text-[10px] mb-1">
+                          Enter Tag Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formCustomTag}
+                          onChange={(e) => setFormCustomTag(e.target.value)}
+                          placeholder="e.g. summer, eid, deal"
+                          className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900"
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <label className="block font-bold uppercase text-slate-500 text-[10px] mb-1">
-                        Max Products Limit
+                        Display Limit
                       </label>
                       <input
                         type="number"
                         min={2}
-                        max={30}
+                        max={40}
                         value={formLimit}
                         onChange={(e) => setFormLimit(Number(e.target.value))}
                         className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900"
@@ -611,7 +837,7 @@ export default function SectionsManagerPage() {
 
                     <div>
                       <label className="block font-bold uppercase text-slate-500 text-[10px] mb-1">
-                        "View All" Link Target
+                        "View All" Link
                       </label>
                       <input
                         type="text"
@@ -622,10 +848,97 @@ export default function SectionsManagerPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Manual Specific Product Selector List */}
+                  {formFilterType === "manual" && (
+                    <div className="pt-2 border-t border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="relative flex-1">
+                          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            placeholder="Search catalog products..."
+                            className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormSelectedProductIds(
+                              formSelectedProductIds.length === products.length
+                                ? []
+                                : products.map((p) => p.id)
+                            )
+                          }
+                          className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-bold uppercase"
+                        >
+                          {formSelectedProductIds.length === products.length
+                            ? "Clear All"
+                            : "Select All"}
+                        </button>
+                      </div>
+
+                      {/* Product Selector Scroll Window */}
+                      <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y divide-slate-100">
+                        {filteredModalProducts.length === 0 ? (
+                          <div className="p-4 text-center text-slate-400 text-xs">
+                            No products found matching &ldquo;{productSearch}&rdquo;
+                          </div>
+                        ) : (
+                          filteredModalProducts.map((p) => {
+                            const isChecked = formSelectedProductIds.includes(p.id);
+                            const thumb =
+                              p.variants?.[0]?.images?.[0] ||
+                              "/images/placeholders/product-placeholder.avif";
+
+                            return (
+                              <div
+                                key={p.id}
+                                onClick={() => toggleProductSelection(p.id)}
+                                className={cn(
+                                  "flex items-center justify-between p-2.5 hover:bg-slate-50 cursor-pointer transition-colors",
+                                  isChecked && "bg-amber-50/60"
+                                )}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-10 relative bg-slate-100 rounded-md overflow-hidden shrink-0">
+                                    <Image
+                                      src={thumb}
+                                      alt={p.title}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-900 text-xs truncate">
+                                      {p.title}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500">
+                                      {formatPrice(p.salePrice || p.basePrice)} • {p.category}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 pl-2">
+                                  {isChecked ? (
+                                    <CheckSquare className="w-4 h-4 text-amber-600" />
+                                  ) : (
+                                    <Square className="w-4 h-4 text-slate-300" />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Promo Banner Options */}
+              {/* Promo Banner Details */}
               {formType === "promo_banner" && (
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                   <span className="font-bold uppercase text-[11px] text-slate-700 block">

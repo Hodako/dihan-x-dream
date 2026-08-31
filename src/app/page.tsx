@@ -1,15 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, getDocs, getDoc, doc, query, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Product, BannerSlide, TrendingTile, LookbookItem, HomeSection } from "@/types";
+import { useState, useEffect } from "react";
 import {
-  INITIAL_BANNERS,
-  INITIAL_TRENDING_TILES,
-  INITIAL_LOOKBOOK,
-  INITIAL_HOME_SECTIONS,
-} from "@/lib/seedData";
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  doc,
+  getDoc,
+  onSnapshot,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  BannerSlide,
+  TrendingTile,
+  LookbookItem,
+  Product,
+  HomeSection,
+} from "@/types";
+import { INITIAL_HOME_SECTIONS } from "@/lib/seedData";
 import HeroCarousel from "@/components/storefront/home/HeroCarousel";
 import TrendingStrip from "@/components/storefront/home/TrendingStrip";
 import ProductRail from "@/components/storefront/home/ProductRail";
@@ -20,9 +30,9 @@ import TrustRow from "@/components/storefront/TrustRow";
 
 export default function HomePage() {
   const [sections, setSections] = useState<HomeSection[]>(INITIAL_HOME_SECTIONS);
-  const [banners, setBanners] = useState<BannerSlide[]>(INITIAL_BANNERS);
-  const [trendingTiles, setTrendingTiles] = useState<TrendingTile[]>(INITIAL_TRENDING_TILES);
-  const [lookbookItems, setLookbookItems] = useState<LookbookItem[]>(INITIAL_LOOKBOOK);
+  const [banners, setBanners] = useState<BannerSlide[]>([]);
+  const [trendingTiles, setTrendingTiles] = useState<TrendingTile[]>([]);
+  const [lookbookItems, setLookbookItems] = useState<LookbookItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -58,10 +68,19 @@ export default function HomePage() {
 
     async function loadData() {
       // 1. Instant local sync
-      const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
-      const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
-      const cachedCatalog: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]") : [];
-      
+      const deletedIds: string[] =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]")
+          : [];
+      const localCustom: Product[] =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]")
+          : [];
+      const cachedCatalog: Product[] =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]")
+          : [];
+
       let initialList: Product[] = [...localCustom];
       for (const p of cachedCatalog) {
         if (!initialList.some((item) => item.id === p.id)) {
@@ -72,8 +91,29 @@ export default function HomePage() {
         setProducts(initialList.filter((p) => !deletedIds.includes(p.id)));
       }
 
+      // Check local storage for banners, tiles, lookbook
+      if (typeof window !== "undefined") {
+        try {
+          const storedBanners = localStorage.getItem("dream_home_banners");
+          if (storedBanners) {
+            const parsed = JSON.parse(storedBanners);
+            if (Array.isArray(parsed) && parsed.length > 0) setBanners(parsed);
+          }
+          const storedTiles = localStorage.getItem("dream_home_tiles");
+          if (storedTiles) {
+            const parsed = JSON.parse(storedTiles);
+            if (Array.isArray(parsed) && parsed.length > 0) setTrendingTiles(parsed);
+          }
+          const storedLb = localStorage.getItem("dream_home_lookbook");
+          if (storedLb) {
+            const parsed = JSON.parse(storedLb);
+            if (Array.isArray(parsed) && parsed.length > 0) setLookbookItems(parsed);
+          }
+        } catch (e) {}
+      }
+
       try {
-        // Parallel fetch for ultra-fast load
+        // Parallel fetch
         const [bannerSnap, tileSnap, lbSnap] = await Promise.all([
           getDocs(query(collection(db, "banners"), orderBy("order", "asc"))),
           getDoc(doc(db, "settings", "trendingTiles")),
@@ -81,7 +121,9 @@ export default function HomePage() {
         ]);
 
         if (!bannerSnap.empty) {
-          const loadedBanners = bannerSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as BannerSlide));
+          const loadedBanners = bannerSnap.docs.map(
+            (d) => ({ id: d.id, ...d.data() } as BannerSlide)
+          );
           setBanners(loadedBanners);
           if (typeof window !== "undefined") {
             localStorage.setItem("dream_home_banners", JSON.stringify(loadedBanners));
@@ -104,27 +146,27 @@ export default function HomePage() {
           }
         }
 
-        // Fetch Products
+        // Fetch Firestore Products
         let allProds: Product[] = [...initialList];
         try {
           const prodSnap = await getDocs(query(collection(db, "products"), limit(50)));
           if (!prodSnap.empty) {
-            const loadedProds = prodSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
-            for (const p of loadedProds) {
-              const idx = allProds.findIndex((item) => item.id === p.id);
+            prodSnap.forEach((docSnap) => {
+              const data = { id: docSnap.id, ...docSnap.data() } as Product;
+              const idx = allProds.findIndex((p) => p.id === data.id);
               if (idx >= 0) {
-                allProds[idx] = p;
+                allProds[idx] = data;
               } else {
-                allProds.unshift(p);
+                allProds.unshift(data);
               }
-            }
+            });
           }
         } catch (e) {}
 
-        const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
-        setProducts(finalProds);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
+        const finalCatalog = allProds.filter((p) => !deletedIds.includes(p.id));
+        setProducts(finalCatalog);
+        if (typeof window !== "undefined" && finalCatalog.length > 0) {
+          localStorage.setItem("dream_catalog_cache", JSON.stringify(finalCatalog));
         }
       } catch (err) {
       } finally {
@@ -143,6 +185,21 @@ export default function HomePage() {
 
   const getSectionProducts = (sec: HomeSection) => {
     let prods = [...products];
+
+    // 1. Specific manual selection
+    if (
+      sec.filterType === "manual" &&
+      Array.isArray(sec.selectedProductIds) &&
+      sec.selectedProductIds.length > 0
+    ) {
+      const map = new Map(products.map((p) => [p.id, p]));
+      const chosen = sec.selectedProductIds
+        .map((id) => map.get(id))
+        .filter(Boolean) as Product[];
+      if (chosen.length > 0) return chosen.slice(0, sec.limit || chosen.length);
+    }
+
+    // 2. Filter criteria
     if (sec.filterType === "new") {
       prods = prods.filter((p) => p.isNew);
     } else if (sec.filterType === "trending") {
@@ -154,6 +211,7 @@ export default function HomePage() {
     } else if (sec.filterType === "custom_tag" && sec.customTag) {
       prods = prods.filter((p) => p.tags && p.tags.includes(sec.customTag!));
     }
+
     const maxLimit = sec.limit || 8;
     return prods.slice(0, maxLimit);
   };
@@ -179,6 +237,11 @@ export default function HomePage() {
                 key={sec.id}
                 products={secProds}
                 title={sec.title}
+                subtitle={sec.subtitle}
+                viewAllLink={sec.viewAllLink || "/shop"}
+                badgeText={sec.badgeText}
+                align={sec.align || "left"}
+                gridColumns={sec.gridColumns || 4}
                 loading={loading}
               />
             );
@@ -192,6 +255,8 @@ export default function HomePage() {
                 title={sec.title}
                 subtitle={sec.subtitle}
                 viewAllLink={sec.viewAllLink || "/shop"}
+                badgeText={sec.badgeText}
+                align={sec.align || "left"}
                 products={secProds}
                 loading={loading}
               />
