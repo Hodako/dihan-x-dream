@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
 
     let finalAvifBuffer: Buffer = inputBuffer;
     let conversionType = file.type;
+    let convertedVia = "original";
 
     // 1. Convert & Shrink to AVIF using Tinify API
     try {
@@ -61,13 +62,31 @@ export async function POST(req: NextRequest) {
             const avifArrayBuf = await convertRes.arrayBuffer();
             finalAvifBuffer = Buffer.from(avifArrayBuf);
             conversionType = "image/avif";
+            convertedVia = "tinify";
           }
         }
       } else {
         console.warn("Tinify shrink non-OK status:", tinifyShrinkRes.status);
       }
     } catch (tinifyErr) {
-      console.warn("Tinify processing error, proceeding with input buffer:", tinifyErr);
+      console.warn("Tinify processing error, fallback to sharp:", tinifyErr);
+    }
+
+    // 2. High-Performance Local Fallback: Sharp AVIF conversion if Tinify was skipped/failed
+    if (convertedVia !== "tinify") {
+      try {
+        const sharp = (await import("sharp")).default;
+        const sharpAvif = await sharp(inputBuffer)
+          .avif({ quality: 80, effort: 4 })
+          .toBuffer();
+        if (sharpAvif && sharpAvif.length > 0) {
+          finalAvifBuffer = sharpAvif;
+          conversionType = "image/avif";
+          convertedVia = "sharp";
+        }
+      } catch (sharpErr) {
+        console.warn("Sharp AVIF fallback error:", sharpErr);
+      }
     }
 
     // 2. Upload to ImgBB

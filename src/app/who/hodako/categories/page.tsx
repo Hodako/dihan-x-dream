@@ -75,7 +75,7 @@ export default function AdminCategoriesPage() {
     setEditingCategory(null);
     setName("");
     setSlug("");
-    setImageUrl("/images/categories/men.avif");
+    setImageUrl("");
     setOrder(categories.length + 1);
     setInHeader(true);
     setIsModalOpen(true);

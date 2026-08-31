@@ -1,84 +1,121 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Star, Check, X, Trash2, ShieldCheck, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { Review } from "@/types";
 import { useUIStore } from "@/store/useUIStore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const ITEMS_PER_PAGE = 6;
+
+const DEFAULT_REVIEWS: Review[] = [
+  {
+    id: "rev-1",
+    productId: "df-prod-001",
+    userId: "user-1",
+    userName: "Farhana Ahmed",
+    rating: 5,
+    comment: "Exceptional quality fabric and clean tailoring. The drape is exactly as shown in the editorial photos!",
+    verifiedPurchase: true,
+    status: "approved",
+    createdAt: "2026-08-27",
+  },
+  {
+    id: "rev-2",
+    productId: "df-prod-001",
+    userId: "user-2",
+    userName: "Tanvir Hossain",
+    rating: 5,
+    comment: "Super fast delivery inside Dhaka (received next day). Fits perfectly according to the size guide.",
+    verifiedPurchase: true,
+    status: "approved",
+    createdAt: "2026-08-22",
+  },
+  {
+    id: "rev-3",
+    productId: "df-prod-002",
+    userId: "user-3",
+    userName: "Nusrat Jahan",
+    rating: 4,
+    comment: "Very elegant modern piece. True to size and feels very premium.",
+    verifiedPurchase: true,
+    status: "approved",
+    createdAt: "2026-08-15",
+  },
+  {
+    id: "rev-4",
+    productId: "df-prod-003",
+    userId: "user-4",
+    userName: "Kazi Sazzad",
+    rating: 5,
+    comment: "The polo shirt collar holds shape after 5 washes. Best casual luxury wear in Bangladesh.",
+    verifiedPurchase: true,
+    status: "approved",
+    createdAt: "2026-08-10",
+  },
+  {
+    id: "rev-5",
+    productId: "df-prod-004",
+    userId: "user-5",
+    userName: "Mehnaz Chowdhury",
+    rating: 5,
+    comment: "Ordered via Partial Advance. The delivery person was courteous and product packaging is top notch.",
+    verifiedPurchase: true,
+    status: "approved",
+    createdAt: "2026-08-05",
+  },
+];
 
 export default function AdminReviewsPage() {
   const { addToast } = useUIStore();
   const [currentPage, setCurrentPage] = useState(1);
+  const [reviews, setReviews] = useState<Review[]>(DEFAULT_REVIEWS);
 
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: "rev-1",
-      productId: "df-prod-001",
-      userId: "user-1",
-      userName: "Farhana Ahmed",
-      rating: 5,
-      comment: "Exceptional quality fabric and clean tailoring. The drape is exactly as shown in the editorial photos!",
-      verifiedPurchase: true,
-      status: "approved",
-      createdAt: "2026-08-27",
-    },
-    {
-      id: "rev-2",
-      productId: "df-prod-001",
-      userId: "user-2",
-      userName: "Tanvir Hossain",
-      rating: 5,
-      comment: "Super fast delivery inside Dhaka (received next day). Fits perfectly according to the size guide.",
-      verifiedPurchase: true,
-      status: "approved",
-      createdAt: "2026-08-22",
-    },
-    {
-      id: "rev-3",
-      productId: "df-prod-002",
-      userId: "user-3",
-      userName: "Nusrat Jahan",
-      rating: 4,
-      comment: "Very elegant modern piece. True to size and feels very premium.",
-      verifiedPurchase: true,
-      status: "approved",
-      createdAt: "2026-08-15",
-    },
-    {
-      id: "rev-4",
-      productId: "df-prod-003",
-      userId: "user-4",
-      userName: "Kazi Sazzad",
-      rating: 5,
-      comment: "The polo shirt collar holds shape after 5 washes. Best casual luxury wear in Bangladesh.",
-      verifiedPurchase: true,
-      status: "approved",
-      createdAt: "2026-08-10",
-    },
-    {
-      id: "rev-5",
-      productId: "df-prod-004",
-      userId: "user-5",
-      userName: "Mehnaz Chowdhury",
-      rating: 5,
-      comment: "Ordered via Partial Advance. The delivery person was courteous and product packaging is top notch.",
-      verifiedPurchase: true,
-      status: "approved",
-      createdAt: "2026-08-05",
-    },
-  ]);
+  useEffect(() => {
+    async function loadReviews() {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("dream_reviews_settings");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) setReviews(parsed);
+          } catch (e) {}
+        }
+      }
 
-  const handleStatusChange = (id: string, newStatus: Review["status"]) => {
-    setReviews(
-      reviews.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    );
+      try {
+        const snap = await getDoc(doc(db, "settings", "reviews"));
+        if (snap.exists() && Array.isArray(snap.data().reviews)) {
+          setReviews(snap.data().reviews);
+        }
+      } catch (e) {}
+    }
+    loadReviews();
+  }, []);
+
+  const handleStatusChange = async (id: string, newStatus: Review["status"]) => {
+    const updated = reviews.map((r) => (r.id === id ? { ...r, status: newStatus } : r));
+    setReviews(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dream_reviews_settings", JSON.stringify(updated));
+    }
     addToast(`Review status updated to "${newStatus}"`, "success");
+    try {
+      await setDoc(doc(db, "settings", "reviews"), { reviews: updated });
+    } catch (e) {}
   };
 
-  const handleDelete = (id: string) => {
-    setReviews(reviews.filter((r) => r.id !== id));
+  const handleDelete = async (id: string) => {
+    const updated = reviews.filter((r) => r.id !== id);
+    setReviews(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dream_reviews_settings", JSON.stringify(updated));
+    }
     addToast("Review deleted", "info");
+    try {
+      await setDoc(doc(db, "settings", "reviews"), { reviews: updated });
+    } catch (e) {}
   };
 
   const totalPages = Math.ceil(reviews.length / ITEMS_PER_PAGE) || 1;
