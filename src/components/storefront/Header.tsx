@@ -26,43 +26,13 @@ export default function Header() {
   const { user } = useAuthStore();
 
   const [mounted, setMounted] = useState(false);
-  const [announcement, setAnnouncement] = useState<AnnouncementSettings>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_announcement_settings");
-        if (stored) return JSON.parse(stored);
-      } catch (e) {}
-    }
-    return INITIAL_ANNOUNCEMENT;
-  });
-  const [categories, setCategories] = useState<Category[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_categories_settings");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
-            return parsed.categories;
-          }
-        }
-      } catch (e) {}
-    }
-    return INITIAL_CATEGORIES;
-  });
-  const [headerCategorySlugs, setHeaderCategorySlugs] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_categories_settings");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed.headerCategories) && parsed.headerCategories.length > 0) {
-            return parsed.headerCategories;
-          }
-        }
-      } catch (e) {}
-    }
-    return ["casual-shirts", "polos", "men"];
-  });
+  const [announcement, setAnnouncement] = useState<AnnouncementSettings>(INITIAL_ANNOUNCEMENT);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [headerCategorySlugs, setHeaderCategorySlugs] = useState<string[]>([
+    "casual-shirts",
+    "polos",
+    "men",
+  ]);
 
   useEffect(() => {
     setMounted(true);

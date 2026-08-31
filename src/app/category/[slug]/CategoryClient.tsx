@@ -29,43 +29,9 @@ interface CategoryClientProps {
 const ITEMS_PER_PAGE = 12;
 
 export default function CategoryClient({ slug }: CategoryClientProps) {
-  const [categories, setCategories] = useState<Category[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cachedCats = localStorage.getItem("dream_categories_settings");
-        if (cachedCats) {
-          const parsed = JSON.parse(cachedCats);
-          if (parsed.categories && parsed.categories.length > 0) return parsed.categories;
-        }
-      } catch (e) {}
-    }
-    return INITIAL_CATEGORIES;
-  });
-
-  const [allProducts, setAllProducts] = useState<Product[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
-        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-        const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-        let combined = [...localCustom];
-        for (const p of cachedCatalog) {
-          if (!combined.some((item) => item.id === p.id)) combined.push(p);
-        }
-        return combined.filter((p) => !deletedIds.includes(p.id));
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("dream_catalog_cache");
-      const local = localStorage.getItem("dream_custom_products");
-      if (cached || local) return false;
-    }
-    return true;
-  });
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "discount">("newest");
   const [priceFilter, setPriceFilter] = useState<"all" | "under-1500" | "sale" | "in-stock">("all");
   const [gridCols, setGridCols] = useState<3 | 4>(4);

@@ -47,27 +47,8 @@ function matchProduct(list: Product[], rawSlug: string): Product | null {
 
 export default function ProductDetailClient({ slug }: ProductDetailClientProps) {
   const router = useRouter();
-  const [productData, setProductData] = useState<Product | null>(() => {
-    if (typeof window !== "undefined") {
-      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-      const foundLocal = matchProduct(localCustom, slug);
-      if (foundLocal) return foundLocal;
-      const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-      const foundCached = matchProduct(allCached, slug);
-      if (foundCached) return foundCached;
-    }
-    return null;
-  });
-
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-      if (matchProduct(localCustom, slug)) return false;
-      const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-      if (matchProduct(allCached, slug)) return false;
-    }
-    return true;
-  });
+  const [productData, setProductData] = useState<Product | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // 1. Instant check in local storage

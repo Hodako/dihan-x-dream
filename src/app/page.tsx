@@ -19,82 +19,12 @@ import PromoBanner from "@/components/storefront/home/PromoBanner";
 import TrustRow from "@/components/storefront/TrustRow";
 
 export default function HomePage() {
-  const [sections, setSections] = useState<HomeSection[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_home_sections");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return INITIAL_HOME_SECTIONS;
-  });
-
-  const [banners, setBanners] = useState<BannerSlide[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_home_banners");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return INITIAL_BANNERS;
-  });
-
-  const [trendingTiles, setTrendingTiles] = useState<TrendingTile[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_home_tiles");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return INITIAL_TRENDING_TILES;
-  });
-
-  const [lookbookItems, setLookbookItems] = useState<LookbookItem[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("dream_home_lookbook");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return INITIAL_LOOKBOOK;
-  });
-
-  const [products, setProducts] = useState<Product[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
-        const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
-        const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-        let combined = [...localCustom];
-        for (const p of cachedCatalog) {
-          if (!combined.some((item) => item.id === p.id)) combined.push(p);
-        }
-        return combined.filter((p) => !deletedIds.includes(p.id));
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("dream_catalog_cache");
-      const local = localStorage.getItem("dream_custom_products");
-      if (cached || local) return false;
-    }
-    return true;
-  });
+  const [sections, setSections] = useState<HomeSection[]>(INITIAL_HOME_SECTIONS);
+  const [banners, setBanners] = useState<BannerSlide[]>(INITIAL_BANNERS);
+  const [trendingTiles, setTrendingTiles] = useState<TrendingTile[]>(INITIAL_TRENDING_TILES);
+  const [lookbookItems, setLookbookItems] = useState<LookbookItem[]>(INITIAL_LOOKBOOK);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const syncLocalSections = () => {
