@@ -457,9 +457,11 @@ export default function AdminSettingsPage() {
               </p>
             </div>
           </div>
-          <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold uppercase rounded-full border border-green-200">
-            Tinify API Active
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold uppercase rounded-full border border-green-200">
+              Tinify Active: YWgrHH4TQxFWcmtRRhb1xzSRqP69CWWF
+            </span>
+          </div>
         </div>
 
         {/* Dropzone Area */}
