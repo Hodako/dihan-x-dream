@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { SlidersHorizontal, X, ChevronDown, Check, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Product } from "@/types";
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from "@/lib/seedData";
@@ -189,7 +190,26 @@ function ShopContent() {
   }, [selectedCategory, selectedSizes, selectedColors, priceRange, sortBy, filterParam, searchParam]);
 
   return (
-    <div className="pt-24 sm:pt-28 pb-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+    <div className="pt-[105px] sm:pt-[118px] lg:pt-[108px] pb-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      {/* Breadcrumbs Navigation */}
+      <nav className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3 sm:mb-4 overflow-x-auto whitespace-nowrap py-1">
+        <Link href="/" className="hover:text-ink-900 transition-colors">
+          Home
+        </Link>
+        <ChevronRight className="w-3.5 h-3.5 text-ink-400 shrink-0" />
+        <Link href="/shop" className="hover:text-ink-900 transition-colors">
+          Shop
+        </Link>
+        {selectedCategory !== "all" && (
+          <>
+            <ChevronRight className="w-3.5 h-3.5 text-ink-400 shrink-0" />
+            <span className="text-ink-900 font-bold capitalize">
+              {selectedCategory.replace(/-/g, " ")}
+            </span>
+          </>
+        )}
+      </nav>
+
       {/* Header & Quick Category Strip */}
       <div className="border-b border-line-100 pb-4 mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

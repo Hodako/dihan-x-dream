@@ -159,7 +159,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
   }, [filteredProducts, currentPage]);
 
   return (
-    <div className="pt-[105px] sm:pt-[110px] lg:pt-[95px] pb-16 bg-[#FAFAFA] min-h-screen">
+    <div className="pt-[105px] sm:pt-[118px] lg:pt-[108px] pb-16 bg-[#FAFAFA] min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
         {/* Breadcrumbs Navigation */}
         <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-500 uppercase tracking-wider">

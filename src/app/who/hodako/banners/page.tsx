@@ -86,6 +86,10 @@ export default function AdminBannersPage() {
     e.preventDefault();
     setIsSavingAnnouncement(true);
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_announcement_settings", JSON.stringify(announcement));
+        window.dispatchEvent(new Event("storage"));
+      }
       await setDoc(doc(db, "settings", "announcement"), announcement);
       addToast("Top announcement settings saved!", "success");
     } catch (err: any) {
@@ -142,6 +146,11 @@ export default function AdminBannersPage() {
     addToast("Banner slide added to carousel!", "success");
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_home_banners", JSON.stringify(updated));
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("dream_banners_changed"));
+      }
       await setDoc(doc(db, "banners", newSlide.id), newSlide);
     } catch (e) {}
   };
@@ -154,6 +163,9 @@ export default function AdminBannersPage() {
       if (!deletedIds.includes(id)) {
         localStorage.setItem("dream_deleted_banners", JSON.stringify([...deletedIds, id]));
       }
+      localStorage.setItem("dream_home_banners", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("dream_banners_changed"));
     } catch {}
 
     addToast("Slide removed", "info");
@@ -248,6 +260,10 @@ export default function AdminBannersPage() {
     setEditingTileId(null);
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_home_tiles", JSON.stringify(updatedList));
+        window.dispatchEvent(new Event("storage"));
+      }
       await setDoc(doc(db, "settings", "trendingTiles"), { tiles: updatedList });
     } catch (e) {}
   };
@@ -258,6 +274,10 @@ export default function AdminBannersPage() {
     addToast("Tile deleted", "info");
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_home_tiles", JSON.stringify(updated));
+        window.dispatchEvent(new Event("storage"));
+      }
       await setDoc(doc(db, "settings", "trendingTiles"), { tiles: updated });
     } catch (e) {}
   };
@@ -318,6 +338,10 @@ export default function AdminBannersPage() {
     setEditingLbId(null);
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_home_lookbook", JSON.stringify(updatedList));
+        window.dispatchEvent(new Event("storage"));
+      }
       await setDoc(doc(db, "settings", "lookbook"), { items: updatedList });
     } catch (e) {}
   };
@@ -328,6 +352,10 @@ export default function AdminBannersPage() {
     addToast("Lookbook item removed", "info");
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_home_lookbook", JSON.stringify(updated));
+        window.dispatchEvent(new Event("storage"));
+      }
       await setDoc(doc(db, "settings", "lookbook"), { items: updated });
     } catch (e) {}
   };

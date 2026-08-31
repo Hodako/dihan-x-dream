@@ -16,6 +16,7 @@ import {
   X,
   Copy,
   CheckCheck,
+  ChevronRight,
 } from "lucide-react";
 import { Product, ProductVariant, Review, LogisticsSettings } from "@/types";
 import { INITIAL_PRODUCTS, INITIAL_LOGISTICS_SETTINGS } from "@/lib/seedData";
@@ -437,17 +438,21 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   const recommendations: Product[] = [];
 
   return (
-    <div className="pt-[74px] sm:pt-[82px] pb-16 bg-white">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
-        <nav className="text-[11px] sm:text-xs uppercase text-ink-500 mb-2 sm:mb-4 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1">
-          <Link href="/" className="hover:text-ink-900">Home</Link>
-          <span>/</span>
-          <Link href={`/shop?category=${product.category}`} className="hover:text-ink-900 capitalize">
-            {product.category.replace("-", " ")}
+    <div className="pt-[105px] sm:pt-[118px] lg:pt-[108px] pb-16 bg-white">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        {/* Breadcrumbs Navigation */}
+        <nav className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3 sm:mb-5 overflow-x-auto whitespace-nowrap py-1">
+          <Link href="/" className="hover:text-ink-900 transition-colors">
+            Home
           </Link>
-          <span>/</span>
-          <span className="text-ink-900 font-semibold truncate">{product.title}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-ink-400 shrink-0" />
+          <Link href={`/category/${product.category}`} className="hover:text-ink-900 transition-colors capitalize">
+            {product.category.replace(/-/g, " ")}
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-ink-400 shrink-0" />
+          <span className="text-ink-900 font-bold truncate max-w-[200px] sm:max-w-md">
+            {product.title}
+          </span>
         </nav>
 
         {/* Product Detail Layout (Tight, clean, elegant) */}
