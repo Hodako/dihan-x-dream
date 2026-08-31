@@ -29,7 +29,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const discountPercent = calculateDiscount(product.basePrice, product.salePrice);
   const currentVariant: ProductVariant = product.variants?.[selectedVariantIndex] || product.variants?.[0];
 
-  const primaryImage = currentVariant?.images?.[0] || "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80";
+  const primaryImage = currentVariant?.images?.[0] || "/images/placeholders/product-placeholder.avif";
   const secondaryImage = currentVariant?.images?.[1] || primaryImage;
 
   const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;

@@ -228,7 +228,7 @@ export default function AdminProductsPage() {
         size: v.size || "M",
         sku: v.sku || `DF-${Date.now()}`,
         stock: Number(v.stock) || 0,
-        images: v.images.length > 0 ? v.images : uploadedImages.length > 0 ? uploadedImages : ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
+        images: v.images.length > 0 ? v.images : uploadedImages.length > 0 ? uploadedImages : ["/images/placeholders/product-placeholder.avif"],
       })),
       fabricAndCare: fabricAndCare || "100% Combed Cotton, Machine wash cold",
       isNew: Boolean(isNew),
@@ -428,7 +428,7 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-line-100 text-admin-text-primary-light">
               {paginatedProducts.map((prod) => {
                 const totalStock = prod.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
-                const primaryImg = prod.variants?.[0]?.images?.[0] || "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800";
+                const primaryImg = prod.variants?.[0]?.images?.[0] || "/images/placeholders/product-placeholder.avif";
 
                 return (
                   <tr key={prod.id} className="hover:bg-bg-subtle/50 transition-colors">

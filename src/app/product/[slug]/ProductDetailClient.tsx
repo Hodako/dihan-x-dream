@@ -194,7 +194,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
       return Array.from(new Set(anyImages));
     }
     return [
-      "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1200",
+      "/images/placeholders/product-placeholder.avif",
     ];
   }, [activeVariant, product]);
 

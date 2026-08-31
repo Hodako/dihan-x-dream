@@ -75,7 +75,7 @@ export default function AdminCategoriesPage() {
     setEditingCategory(null);
     setName("");
     setSlug("");
-    setImageUrl("https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800");
+    setImageUrl("/images/categories/men.avif");
     setOrder(categories.length + 1);
     setInHeader(true);
     setIsModalOpen(true);
@@ -129,7 +129,7 @@ export default function AdminCategoriesPage() {
         id: `cat_${Date.now()}`,
         name,
         slug: generatedSlug,
-        imageUrl: imageUrl || "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800",
+        imageUrl: imageUrl || "/images/categories/men.avif",
         order: Number(order),
       };
       updatedList = [...categories, newCat];

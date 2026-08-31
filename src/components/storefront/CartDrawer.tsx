@@ -94,7 +94,7 @@ export default function CartDrawer() {
                 {/* Product Image */}
                 <div className="relative w-20 h-24 flex-shrink-0 bg-bg-subtle overflow-hidden">
                   <Image
-                    src={item.image || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400"}
+                    src={item.image || "/images/placeholders/product-placeholder.avif"}
                     alt={item.title}
                     fill
                     className="object-cover object-top"
