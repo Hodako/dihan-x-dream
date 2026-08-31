@@ -444,35 +444,35 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
         </nav>
 
         {/* Product Detail Layout (Tight, clean, elegant) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-start">
-          {/* LEFT COLUMN: Media Gallery */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
+          {/* LEFT COLUMN: Media Gallery (Compact & Elegant) */}
           <div className={cn(
-            "lg:col-span-7 flex flex-col-reverse gap-2.5 sm:gap-3",
+            "lg:col-span-5 flex flex-col-reverse gap-2 sm:gap-3 items-center sm:items-start justify-center",
             galleryImages.length > 1 ? "sm:flex-row" : ""
           )}>
             {/* Desktop Vertical Thumbnail Strip (Only shown if > 1 image) */}
             {galleryImages.length > 1 && (
-              <div className="hidden sm:flex flex-col gap-2 w-16 flex-shrink-0">
+              <div className="hidden sm:flex flex-col gap-2 w-12 md:w-14 flex-shrink-0">
                 {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
                     className={cn(
-                      "relative aspect-[3/4] w-full rounded-lg overflow-hidden border-2 transition-all bg-bg-subtle",
+                      "relative aspect-[3/4] w-full rounded-md overflow-hidden border transition-all bg-bg-subtle",
                       selectedImageIndex === idx
-                        ? "border-ink-900 shadow-xs"
-                        : "border-line-200 opacity-70 hover:opacity-100"
+                        ? "border-ink-900 ring-1 ring-ink-900 shadow-xs"
+                        : "border-line-200 opacity-60 hover:opacity-100"
                     )}
                   >
-                    <Image src={img} alt={`Thumbnail ${idx}`} fill unoptimized className="object-cover object-top" sizes="64px" />
+                    <Image src={img} alt={`Thumbnail ${idx}`} fill unoptimized className="object-cover object-top" sizes="56px" />
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Main Portrait Image Container */}
+            {/* Main Portrait Image Container - Compact & Perfectly Proportionate */}
             <div
-              className="relative aspect-[3/4] sm:aspect-[4/5] flex-1 rounded-xl sm:rounded-2xl overflow-hidden bg-bg-subtle cursor-zoom-in shadow-2xs"
+              className="relative aspect-[3/4] w-full max-w-[280px] sm:max-w-[340px] md:max-w-[380px] rounded-xl sm:rounded-2xl overflow-hidden bg-bg-subtle cursor-zoom-in shadow-xs mx-auto"
               onClick={() => setIsLightboxOpen(true)}
             >
               <Image
@@ -481,26 +481,26 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
                 fill
                 priority
                 unoptimized
-                sizes="(max-width: 1024px) 100vw, 55vw"
+                sizes="(max-width: 640px) 280px, (max-width: 1024px) 340px, 380px"
                 className="object-cover object-top transition-transform duration-500 hover:scale-105"
               />
 
               {/* Mobile Image Counter (Only shown if > 1 image) */}
               {galleryImages.length > 1 && (
-                <div className="sm:hidden absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-0.5 rounded-full">
+                <div className="sm:hidden absolute bottom-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
                   {selectedImageIndex + 1} / {galleryImages.length}
                 </div>
               )}
 
               {/* Badges */}
-              <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none">
+              <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
                 {discountPercent > 0 && (
-                  <span className="bg-accent-red text-white text-[9px] font-bold tracking-wider px-2 py-0.5 uppercase rounded-xs">
+                  <span className="bg-accent-red text-white text-[8px] sm:text-[9px] font-bold tracking-wider px-1.5 py-0.5 uppercase rounded-xs shadow-xs">
                     SALE -{discountPercent}%
                   </span>
                 )}
                 {product.isNew && (
-                  <span className="bg-ink-900 text-white text-[9px] font-bold tracking-wider px-2 py-0.5 uppercase rounded-xs">
+                  <span className="bg-ink-900 text-white text-[8px] sm:text-[9px] font-bold tracking-wider px-1.5 py-0.5 uppercase rounded-xs shadow-xs">
                     NEW ARRIVAL
                   </span>
                 )}
@@ -510,24 +510,24 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
           {/* Mobile Horizontal Thumbnail Rail (Only shown if > 1 image) */}
           {galleryImages.length > 1 && (
-            <div className="sm:hidden flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <div className="sm:hidden flex gap-1.5 overflow-x-auto no-scrollbar py-0.5 justify-center max-w-[280px] mx-auto">
               {galleryImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
                   className={cn(
-                    "relative w-12 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all bg-bg-subtle",
+                    "relative w-10 h-14 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all bg-bg-subtle",
                     selectedImageIndex === idx ? "border-ink-900 shadow-xs" : "border-line-200 opacity-60"
                   )}
                 >
-                  <Image src={img} alt="Thumb" fill unoptimized className="object-cover object-top" sizes="48px" />
+                  <Image src={img} alt="Thumb" fill unoptimized className="object-cover object-top" sizes="40px" />
                 </button>
               ))}
             </div>
           )}
 
           {/* RIGHT COLUMN: Buy Box */}
-          <div ref={buyBoxRef} className="lg:col-span-5 space-y-3.5 sm:space-y-4 lg:sticky lg:top-20">
+          <div ref={buyBoxRef} className="lg:col-span-7 space-y-3.5 sm:space-y-4 lg:sticky lg:top-20">
             {/* Title & Brand */}
             <div>
               <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-ink-400 block">
