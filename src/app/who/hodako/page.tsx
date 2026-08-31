@@ -45,8 +45,19 @@ export default function AdminDashboardPage() {
     loadOrders();
   }, []);
 
-  // 100% Genuine, accurate metrics directly computed from real orders
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  // Store Revenue = Product Valuation (strictly excluding courier delivery charges)
+  const getOrderProductValue = (o: Order) => {
+    if (typeof o.subtotal === "number" && o.subtotal > 0) return o.subtotal;
+    if (Array.isArray(o.items) && o.items.length > 0) {
+      return o.items.reduce(
+        (itemSum, item) => itemSum + (item.price || 0) * (item.quantity || 1),
+        0
+      );
+    }
+    return Math.max(0, (o.grandTotal || 0) - (o.deliveryCharge || 0));
+  };
+
+  const totalRevenue = orders.reduce((sum, o) => sum + getOrderProductValue(o), 0);
   const pendingCOD = orders
     .filter((o) => o.paymentMethod === "cod" || o.paymentMethod === "partial")
     .reduce((sum, o) => sum + (o.remainingDue || 0), 0);
@@ -57,16 +68,16 @@ export default function AdminDashboardPage() {
   const shippedList = orders.filter((o) => o.status === "shipped");
   const deliveredList = orders.filter((o) => o.status === "delivered");
 
-  const pendingRevenue = pendingList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
-  const processingRevenue = processingList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
-  const shippedRevenue = shippedList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
-  const deliveredRevenue = deliveredList.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  const pendingRevenue = pendingList.reduce((sum, o) => sum + getOrderProductValue(o), 0);
+  const processingRevenue = processingList.reduce((sum, o) => sum + getOrderProductValue(o), 0);
+  const shippedRevenue = shippedList.reduce((sum, o) => sum + getOrderProductValue(o), 0);
+  const deliveredRevenue = deliveredList.reduce((sum, o) => sum + getOrderProductValue(o), 0);
 
   const kpis = [
     {
-      title: "TOTAL STORE REVENUE",
+      title: "TOTAL PRODUCT VALUATION REVENUE",
       value: formatPrice(totalRevenue),
-      change: `${orders.length} total orders recorded`,
+      change: "Excludes courier delivery fees",
       icon: TrendingUp,
       accentColor: "text-admin-accent",
     },

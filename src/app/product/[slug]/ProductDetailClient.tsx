@@ -17,8 +17,8 @@ import {
   Copy,
   CheckCheck,
 } from "lucide-react";
-import { Product, ProductVariant, Review } from "@/types";
-import { INITIAL_PRODUCTS } from "@/lib/seedData";
+import { Product, ProductVariant, Review, LogisticsSettings } from "@/types";
+import { INITIAL_PRODUCTS, INITIAL_LOGISTICS_SETTINGS } from "@/lib/seedData";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useUIStore } from "@/store/useUIStore";
@@ -49,31 +49,47 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
   const router = useRouter();
   const [productData, setProductData] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [logistics, setLogistics] = useState<LogisticsSettings>(INITIAL_LOGISTICS_SETTINGS);
 
   useEffect(() => {
     // 1. Instant check in local storage
     if (typeof window !== "undefined") {
+      const storedLogistics = localStorage.getItem("dream_logistics_settings");
+      if (storedLogistics) {
+        try {
+          const parsed = JSON.parse(storedLogistics);
+          if (parsed.settings) setLogistics(parsed.settings);
+        } catch (e) {}
+      }
+
       const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
       const foundLocal = matchProduct(localCustom, slug);
       if (foundLocal) {
         setProductData(foundLocal);
         setLoading(false);
-        return;
-      }
-      const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-      const foundCached = matchProduct(allCached, slug);
-      if (foundCached) {
-        setProductData(foundCached);
-        setLoading(false);
-        return;
+      } else {
+        const allCached: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+        const foundCached = matchProduct(allCached, slug);
+        if (foundCached) {
+          setProductData(foundCached);
+          setLoading(false);
+        }
       }
     }
 
-    async function loadFirestoreProduct() {
-      setLoading(true);
+    async function loadFirestoreData() {
       try {
         const { collection, getDocs, query, where, doc, getDoc } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
+
+        // Load logistics
+        try {
+          const logSnap = await getDoc(doc(db, "settings", "logistics"));
+          if (logSnap.exists()) {
+            const data = logSnap.data();
+            if (data.settings) setLogistics(data.settings);
+          }
+        } catch (e) {}
         const decoded = decodeURIComponent(slug).trim();
 
         // 1. Query by exact slug
@@ -129,7 +145,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
       }
     }
 
-    loadFirestoreProduct();
+    loadFirestoreData();
   }, [slug]);
 
   const product = productData;
@@ -701,19 +717,26 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
               </div>
             </div>
 
-            {/* Trust Policy Strip */}
+            {/* Trust Policy Strip (Admin Defined via /who/hodako/logistics) */}
             <div className="p-3 border border-line-200 rounded-xl space-y-1.5 text-xs text-ink-600 bg-white">
               <div className="flex items-center gap-2">
-                <Truck className="w-3.5 h-3.5 text-ink-900 flex-shrink-0" />
-                <span><strong>Delivery:</strong> Dhaka 1-2 days (৳60) · Outside 2-4 days (৳120)</span>
+                <Truck className="w-3.5 h-3.5 text-ink-900 shrink-0" />
+                <span>
+                  <strong>Delivery:</strong>{" "}
+                  {logistics.deliveryNote ||
+                    `Dhaka ${logistics.insideDhakaDeliveryTime || "1-2 days"} (৳${logistics.globalInsideDhaka || 150}) · Outside ${logistics.outsideDhakaDeliveryTime || "2-4 days"} (৳${logistics.globalOutsideDhaka || 150})`}
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-df-success flex-shrink-0" />
-                <span>Cash on Delivery (COD) available</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-df-success shrink-0" />
+                <span>{logistics.codNote || "Cash on Delivery (COD) available"}</span>
               </div>
               <div className="flex items-center gap-2">
-                <RefreshCw className="w-3.5 h-3.5 text-ink-900 flex-shrink-0" />
-                <span>Hassle-free 7-day size exchange guarantee</span>
+                <RefreshCw className="w-3.5 h-3.5 text-ink-900 shrink-0" />
+                <span>
+                  {logistics.exchangeGuaranteeNote ||
+                    "Hassle-free 7-day size exchange guarantee"}
+                </span>
               </div>
             </div>
 

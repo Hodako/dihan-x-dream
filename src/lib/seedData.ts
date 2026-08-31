@@ -88,84 +88,12 @@ export const INITIAL_CATEGORIES: Category[] = [
   },
 ];
 
-export const INITIAL_BANNERS: BannerSlide[] = [
-  {
-    id: "banner-1",
-    imageUrl: "/images/banners/hero_1.avif",
-    headline: "SUMMER TAILORING & CASUAL SHIRTS",
-    subtext: "Elevated casual shirts and premium polo edits crafted for modern Bangladesh.",
-    ctaText: "",
-    ctaLink: "/shop",
-    order: 1,
-    active: true,
-  },
-  {
-    id: "banner-2",
-    imageUrl: "/images/banners/hero_2.avif",
-    headline: "NEW ARRIVALS: CONTEMPORARY CLASSICS",
-    subtext: "Sharp button-downs, textured polos, and fluid silhouettes designed for effortless elegance.",
-    ctaText: "",
-    ctaLink: "/shop",
-    order: 2,
-    active: true,
-  },
-];
+export const INITIAL_BANNERS: BannerSlide[] = [];
 
 // Rectangular slideable category cards
-export const INITIAL_TRENDING_TILES: TrendingTile[] = [
-  {
-    id: "tile-1",
-    title: "SHOP SIGNATURE POLO",
-    imageUrl: "/images/tiles/tile-polo.avif",
-    link: "/shop?category=polos",
-    order: 1,
-  },
-  {
-    id: "tile-2",
-    title: "SHOP HALF SLEEVE SHIRTS",
-    imageUrl: "/images/tiles/tile-half-sleeve.avif",
-    link: "/shop?category=casual-shirts",
-    order: 2,
-  },
-  {
-    id: "tile-3",
-    title: "SHOP OLD MONEY",
-    imageUrl: "/images/tiles/tile-old-money.avif",
-    link: "/shop?category=men",
-    order: 3,
-  },
-  {
-    id: "tile-4",
-    title: "SHOP SHIRT",
-    imageUrl: "/images/tiles/tile-shirt.avif",
-    link: "/shop?category=casual-shirts",
-    order: 4,
-  },
-];
+export const INITIAL_TRENDING_TILES: TrendingTile[] = [];
 
-export const INITIAL_LOOKBOOK: LookbookItem[] = [
-  {
-    id: "look-1",
-    title: "SIGNATURE CASUAL SHIRT",
-    subtitle: "Breathable cotton tailoring with modern spread collar",
-    imageUrl: "/images/lookbook/look-1.avif",
-    link: "/shop?category=casual-shirts",
-  },
-  {
-    id: "look-2",
-    title: "TEXTURED KNIT POLO",
-    subtitle: "Contrast tipped collar & luxury pique weave",
-    imageUrl: "/images/lookbook/look-2.avif",
-    link: "/shop?category=polos",
-  },
-  {
-    id: "look-3",
-    title: "SATIN DRAPE SILHOUETTE",
-    subtitle: "Bias-cut fluid elegance",
-    imageUrl: "/images/lookbook/look-3.avif",
-    link: "/shop?category=dresses",
-  },
-];
+export const INITIAL_LOOKBOOK: LookbookItem[] = [];
 
 export const INITIAL_PRODUCTS: Product[] = [];
 
@@ -181,6 +109,11 @@ export const INITIAL_LOGISTICS_SETTINGS: LogisticsSettings = {
   },
   partialAdvanceType: "fixed",
   partialAdvanceValue: 150,
+  insideDhakaDeliveryTime: "1-2 days",
+  outsideDhakaDeliveryTime: "2-4 days",
+  deliveryNote: "Dhaka 1-2 days (৳150) · Outside 2-4 days (৳150)",
+  codNote: "Cash on Delivery (COD) available",
+  exchangeGuaranteeNote: "Hassle-free 7-day size exchange guarantee",
 };
 
 export const INITIAL_DELIVERY_ZONES: DeliveryZone[] = [

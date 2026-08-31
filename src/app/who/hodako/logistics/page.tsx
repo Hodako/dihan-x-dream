@@ -193,7 +193,7 @@ export default function AdminLogisticsPage() {
       <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-border-light shadow-xs space-y-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light flex items-center gap-2">
           <Truck className="w-4 h-4 text-admin-accent" />
-          <span>GLOBAL DELIVERY CHARGES (BDT ৳)</span>
+          <span>GLOBAL DELIVERY CHARGES & TIMELINES (BDT ৳)</span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -219,6 +219,89 @@ export default function AdminLogisticsPage() {
               onChange={(e) => setSettings({ ...settings, globalOutsideDhaka: Number(e.target.value) })}
               className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-mono font-bold"
             />
+          </div>
+
+          <div>
+            <label className="block font-bold uppercase text-ink-700 mb-1">
+              Inside Dhaka Delivery Time
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 1-2 days"
+              value={settings.insideDhakaDeliveryTime || "1-2 days"}
+              onChange={(e) => setSettings({ ...settings, insideDhakaDeliveryTime: e.target.value })}
+              className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-semibold text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold uppercase text-ink-700 mb-1">
+              Outside Dhaka Delivery Time
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 2-4 days"
+              value={settings.outsideDhakaDeliveryTime || "2-4 days"}
+              onChange={(e) => setSettings({ ...settings, outsideDhakaDeliveryTime: e.target.value })}
+              className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-semibold text-xs"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 1.2 PRODUCT PAGE TRUST & GUARANTEE BADGES (ADMIN DEFINED) */}
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-border-light shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-line-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Product Page Trust & Delivery Badges (Admin Defined)</span>
+          </h2>
+          <span className="text-[10px] font-bold text-gray-500 uppercase">Live on Product Details</span>
+        </div>
+
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block font-bold uppercase text-ink-700 mb-1">
+              Custom Delivery Text Note
+            </label>
+            <input
+              type="text"
+              placeholder={`Dhaka ${settings.insideDhakaDeliveryTime || "1-2 days"} (৳${settings.globalInsideDhaka}) · Outside ${settings.outsideDhakaDeliveryTime || "2-4 days"} (৳${settings.globalOutsideDhaka})`}
+              value={settings.deliveryNote || ""}
+              onChange={(e) => setSettings({ ...settings, deliveryNote: e.target.value })}
+              className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-xs"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Leave blank to automatically use fees & timelines from above: &ldquo;Dhaka {settings.insideDhakaDeliveryTime || "1-2 days"} (৳{settings.globalInsideDhaka}) · Outside {settings.outsideDhakaDeliveryTime || "2-4 days"} (৳{settings.globalOutsideDhaka})&rdquo;
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold uppercase text-ink-700 mb-1">
+                COD Guarantee Note
+              </label>
+              <input
+                type="text"
+                placeholder="Cash on Delivery (COD) available"
+                value={settings.codNote || "Cash on Delivery (COD) available"}
+                onChange={(e) => setSettings({ ...settings, codNote: e.target.value })}
+                className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold uppercase text-ink-700 mb-1">
+                Return / Exchange Guarantee Note
+              </label>
+              <input
+                type="text"
+                placeholder="Hassle-free 7-day size exchange guarantee"
+                value={settings.exchangeGuaranteeNote || "Hassle-free 7-day size exchange guarantee"}
+                onChange={(e) => setSettings({ ...settings, exchangeGuaranteeNote: e.target.value })}
+                className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-xs"
+              />
+            </div>
           </div>
         </div>
       </div>

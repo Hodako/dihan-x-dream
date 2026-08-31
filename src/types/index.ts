@@ -179,6 +179,11 @@ export interface LogisticsSettings {
   };
   partialAdvanceType: "fixed" | "percent";
   partialAdvanceValue: number;
+  insideDhakaDeliveryTime?: string;
+  outsideDhakaDeliveryTime?: string;
+  deliveryNote?: string;
+  codNote?: string;
+  exchangeGuaranteeNote?: string;
 }
 
 export interface Coupon {

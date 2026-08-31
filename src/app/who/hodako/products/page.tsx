@@ -19,18 +19,19 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Product, ProductVariant } from "@/types";
+import { Product, ProductVariant, Category } from "@/types";
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from "@/lib/seedData";
 import { uploadToImgbb } from "@/lib/imgbb";
 import { formatPrice, slugify } from "@/lib/utils";
 import { useUIStore } from "@/store/useUIStore";
-import { doc, getDocs, collection, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { sanitizeForFirestore } from "@/lib/firestoreUtils";
 
 export default function AdminProductsPage() {
   const { addToast } = useUIStore();
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
@@ -70,9 +71,39 @@ export default function AdminProductsPage() {
 
   // Load from Firestore and LocalStorage
   useEffect(() => {
-    async function loadProducts() {
-      const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
-      const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+    async function loadData() {
+      // 1. Categories
+      if (typeof window !== "undefined") {
+        const storedCats = localStorage.getItem("dream_categories_settings");
+        if (storedCats) {
+          try {
+            const parsed = JSON.parse(storedCats);
+            if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+              setCategories(parsed.categories);
+            }
+          } catch (e) {}
+        }
+      }
+
+      try {
+        const catSnap = await getDoc(doc(db, "settings", "categories"));
+        if (catSnap.exists() && Array.isArray(catSnap.data().categories)) {
+          const firestoreCats = catSnap.data().categories as Category[];
+          if (firestoreCats.length > 0) {
+            setCategories(firestoreCats);
+            if (typeof window !== "undefined") {
+              localStorage.setItem(
+                "dream_categories_settings",
+                JSON.stringify({ categories: firestoreCats })
+              );
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 2. Products
+      const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
+      const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
       
       let allLoaded: Product[] = [...localCustom];
       for (const p of INITIAL_PRODUCTS) {
@@ -85,7 +116,6 @@ export default function AdminProductsPage() {
         const snap = await getDocs(collection(db, "products"));
         if (!snap.empty) {
           const firestoreProds = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
-          // Merge avoiding duplicates
           for (const fp of firestoreProds) {
             const idx = allLoaded.findIndex((p) => p.id === fp.id);
             if (idx >= 0) {
@@ -102,7 +132,7 @@ export default function AdminProductsPage() {
       const activeList = allLoaded.filter((p) => !deletedIds.includes(p.id));
       setProducts(activeList);
     }
-    loadProducts();
+    loadData();
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -385,7 +415,7 @@ export default function AdminProductsPage() {
             className="text-xs p-2 bg-bg-subtle border border-line-200 rounded focus:outline-none uppercase font-semibold cursor-pointer"
           >
             <option value="all">All Categories</option>
-            {INITIAL_CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
               </option>
@@ -619,11 +649,17 @@ export default function AdminProductsPage() {
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded text-xs uppercase cursor-pointer"
                   >
-                    {INITIAL_CATEGORIES.map((c) => (
+                    {categories.map((c) => (
                       <option key={c.slug} value={c.slug}>
                         {c.name}
                       </option>
                     ))}
+                    {editingProduct &&
+                      !categories.some((c) => c.slug === editingProduct.category) && (
+                        <option value={editingProduct.category}>
+                          {editingProduct.category}
+                        </option>
+                      )}
                   </select>
                 </div>
 
