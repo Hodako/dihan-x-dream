@@ -40,75 +40,168 @@ function TrackOrderContent() {
     if (!rawTerm) return;
 
     const term = rawTerm.toUpperCase();
+    // Normalize phone: digits only, strip leading zeros for comparison
     const cleanPhone = rawTerm.replace(/\D/g, "");
+    const normalizedPhone11 = cleanPhone.startsWith("880") ? "0" + cleanPhone.slice(3) : cleanPhone;
+    const normalizedPhone880 = cleanPhone.startsWith("0") ? "880" + cleanPhone.slice(1) : cleanPhone;
+
+    const isPhone = cleanPhone.length >= 10;
 
     setIsSearching(true);
     setHasSearched(true);
     setFoundOrder(null);
 
+    // Helper: check if two phone strings represent the same number
+    const phonesMatch = (a: string, b: string) => {
+      if (!a || !b) return false;
+      const na = a.replace(/\D/g, "");
+      const nb = b.replace(/\D/g, "");
+      if (na === nb) return true;
+      // Also compare last 10 digits
+      if (na.slice(-10) === nb.slice(-10) && na.length >= 10 && nb.length >= 10) return true;
+      return false;
+    };
+
     // 1. Try LocalStorage cached orders
     if (typeof window !== "undefined") {
-      // Check direct key
-      const directLocal = localStorage.getItem(`order_${rawTerm}`) || localStorage.getItem(`order_${term}`);
-      if (directLocal) {
-        try {
-          const parsed = JSON.parse(directLocal);
-          if (parsed && parsed.orderNumber) {
-            setFoundOrder(parsed);
-            setIsSearching(false);
-            return;
-          }
-        } catch (e) {}
+      // Check direct key variations
+      const directKeys = [`order_${rawTerm}`, `order_${term}`, `order_${rawTerm.toUpperCase()}`];
+      for (const key of directKeys) {
+        const directLocal = localStorage.getItem(key);
+        if (directLocal) {
+          try {
+            const parsed = JSON.parse(directLocal);
+            if (parsed && (parsed.orderNumber || parsed.id)) {
+              setFoundOrder(parsed);
+              setIsSearching(false);
+              return;
+            }
+          } catch (e) {}
+        }
       }
 
-      // Check recent_orders list
+      // Check recent_orders list — match by order number, id, or phone
       const recentOrders: Order[] = JSON.parse(localStorage.getItem("recent_orders") || "[]");
       const matchedLocal = recentOrders.find(
         (o) =>
           o.orderNumber?.toUpperCase() === term ||
           o.id?.toUpperCase() === term ||
-          (cleanPhone.length >= 10 && o.customerPhone?.replace(/\D/g, "").includes(cleanPhone))
+          (isPhone && (
+            phonesMatch(o.customerPhone || "", rawTerm) ||
+            phonesMatch(o.customerPhone || "", normalizedPhone11) ||
+            phonesMatch(o.customerPhone || "", normalizedPhone880)
+          ))
       );
       if (matchedLocal) {
         setFoundOrder(matchedLocal);
         setIsSearching(false);
         return;
       }
+
+      // Also scan all order_* keys in localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const lsKey = localStorage.key(i);
+        if (lsKey && lsKey.startsWith("order_")) {
+          try {
+            const parsed: Order = JSON.parse(localStorage.getItem(lsKey) || "");
+            if (!parsed || !parsed.id) continue;
+            const matches =
+              parsed.orderNumber?.toUpperCase() === term ||
+              parsed.id?.toUpperCase() === term ||
+              (isPhone && (
+                phonesMatch(parsed.customerPhone || "", rawTerm) ||
+                phonesMatch(parsed.customerPhone || "", normalizedPhone11) ||
+                phonesMatch(parsed.customerPhone || "", normalizedPhone880)
+              ));
+            if (matches) {
+              setFoundOrder(parsed);
+              setIsSearching(false);
+              return;
+            }
+          } catch (e) {}
+        }
+      }
     }
 
     // 2. Query Firestore Database
     try {
-      const { doc, getDoc, collection, query, where, getDocs } = await import("firebase/firestore");
+      const { doc, getDoc, collection, query, where, getDocs, orderBy, limit } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
 
-      // Query by ID
-      const docSnap = await getDoc(doc(db, "orders", rawTerm));
-      if (docSnap.exists()) {
-        setFoundOrder({ id: docSnap.id, ...docSnap.data() } as Order);
-        setIsSearching(false);
-        return;
-      }
-
-      // Query by Order Number (e.g. DF-...)
-      const q1 = query(collection(db, "orders"), where("orderNumber", "==", term));
-      const snap1 = await getDocs(q1);
-      if (!snap1.empty) {
-        const d = snap1.docs[0];
-        setFoundOrder({ id: d.id, ...d.data() } as Order);
-        setIsSearching(false);
-        return;
-      }
-
-      // Query by Phone Number
-      if (cleanPhone.length >= 10) {
-        const q2 = query(collection(db, "orders"), where("customerPhone", "==", rawTerm));
-        const snap2 = await getDocs(q2);
-        if (!snap2.empty) {
-          const d = snap2.docs[0];
-          setFoundOrder({ id: d.id, ...d.data() } as Order);
+      // Strategy 1: Direct document ID lookup
+      try {
+        const docSnap = await getDoc(doc(db, "orders", rawTerm));
+        if (docSnap.exists()) {
+          const order = { id: docSnap.id, ...docSnap.data() } as Order;
+          setFoundOrder(order);
+          // Cache it
+          if (typeof window !== "undefined") {
+            try { localStorage.setItem(`order_${order.id}`, JSON.stringify(order)); } catch (e) {}
+          }
           setIsSearching(false);
           return;
         }
+      } catch (e) {}
+
+      // Strategy 2: By order number (exact, case-insensitive via both forms)
+      const orderNumVariants = [term, rawTerm, rawTerm.toLowerCase()];
+      for (const variant of orderNumVariants) {
+        try {
+          const q = query(collection(db, "orders"), where("orderNumber", "==", variant), limit(1));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const d = snap.docs[0];
+            const order = { id: d.id, ...d.data() } as Order;
+            setFoundOrder(order);
+            if (typeof window !== "undefined") {
+              try { localStorage.setItem(`order_${order.id}`, JSON.stringify(order)); } catch (e) {}
+            }
+            setIsSearching(false);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // Strategy 3: By phone number — try all normalized forms
+      if (isPhone) {
+        const phoneVariants = [rawTerm, normalizedPhone11, normalizedPhone880, cleanPhone];
+        for (const phone of phoneVariants) {
+          try {
+            const q = query(collection(db, "orders"), where("customerPhone", "==", phone), orderBy("createdAt", "desc"), limit(1));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+              const d = snap.docs[0];
+              const order = { id: d.id, ...d.data() } as Order;
+              setFoundOrder(order);
+              if (typeof window !== "undefined") {
+                try { localStorage.setItem(`order_${order.id}`, JSON.stringify(order)); } catch (e) {}
+              }
+              setIsSearching(false);
+              return;
+            }
+          } catch (e) {}
+        }
+
+        // Strategy 4: Prefix range query for phone (handles partial matches)
+        try {
+          const q = query(
+            collection(db, "orders"),
+            where("customerPhone", ">=", normalizedPhone11),
+            where("customerPhone", "<=", normalizedPhone11 + "\uf8ff"),
+            limit(1)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const d = snap.docs[0];
+            const order = { id: d.id, ...d.data() } as Order;
+            setFoundOrder(order);
+            if (typeof window !== "undefined") {
+              try { localStorage.setItem(`order_${order.id}`, JSON.stringify(order)); } catch (e) {}
+            }
+            setIsSearching(false);
+            return;
+          }
+        } catch (e) {}
       }
     } catch (err) {
       console.warn("Firestore track order query error:", err);

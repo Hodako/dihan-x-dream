@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Truck, Plus, Trash2, ShieldCheck, Check, Settings, MapPin, Percent, DollarSign, Save } from "lucide-react";
-import { LogisticsSettings, DeliveryZone } from "@/types";
+import { Truck, Plus, Trash2, ShieldCheck, Check, Settings, MapPin, Percent, DollarSign, Save, Edit2, X } from "lucide-react";
+import { LogisticsSettings, DeliveryZone, TrustBadge } from "@/types";
 import { INITIAL_LOGISTICS_SETTINGS, INITIAL_DELIVERY_ZONES } from "@/lib/seedData";
 import { useBdGeo } from "@/hooks/useBdGeo";
 import { formatPrice } from "@/lib/utils";
@@ -12,6 +12,13 @@ import { db } from "@/lib/firebase";
 
 export default function AdminLogisticsPage() {
   const { addToast } = useUIStore();
+
+  const DEFAULT_TRUST_BADGES: TrustBadge[] = [
+    { id: "tb1", icon: "🚚", title: "Nationwide Shipping", subtitle: "Fast doorstep delivery across all 64 districts", active: true },
+    { id: "tb2", icon: "💵", title: "Cash on Delivery", subtitle: "Pay with cash upon arrival or partial advance", active: true },
+    { id: "tb3", icon: "🔄", title: "Easy 7-Day Exchange", subtitle: "Hassle-free size or product exchange policy", active: true },
+    { id: "tb4", icon: "✅", title: "100% Authentic Quality", subtitle: "Premium curated fabrics and modern tailoring", active: true },
+  ];
 
   const [settings, setSettings] = useState<LogisticsSettings & {
     paymentTitles?: {
@@ -25,6 +32,7 @@ export default function AdminLogisticsPage() {
     };
   }>({
     ...INITIAL_LOGISTICS_SETTINGS,
+    trustBadges: DEFAULT_TRUST_BADGES,
     paymentTitles: {
       cod: "Cash on Delivery (COD)",
       codSub: "Pay total in cash directly to the delivery rider at your doorstep.",
@@ -90,7 +98,13 @@ export default function AdminLogisticsPage() {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            if (parsed.settings) setSettings(parsed.settings);
+            if (parsed.settings) {
+              setSettings((prev) => ({
+                ...prev,
+                ...parsed.settings,
+                trustBadges: parsed.settings.trustBadges?.length > 0 ? parsed.settings.trustBadges : prev.trustBadges,
+              }));
+            }
             if (parsed.zones) setZones(parsed.zones);
           } catch (e) {}
         }
@@ -100,7 +114,13 @@ export default function AdminLogisticsPage() {
         const snap = await getDoc(doc(db, "settings", "logistics"));
         if (snap.exists()) {
           const data = snap.data();
-          if (data.settings) setSettings(data.settings);
+          if (data.settings) {
+            setSettings((prev) => ({
+              ...prev,
+              ...data.settings,
+              trustBadges: data.settings.trustBadges?.length > 0 ? data.settings.trustBadges : prev.trustBadges,
+            }));
+          }
           if (data.zones) setZones(data.zones);
         }
       } catch (e) {}
@@ -112,6 +132,9 @@ export default function AdminLogisticsPage() {
     setIsSaving(true);
     try {
       localStorage.setItem("dream_logistics_settings", JSON.stringify({ settings, zones }));
+      // Dispatch event so TrustRow and other components update immediately
+      window.dispatchEvent(new Event("dream_logistics_changed"));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {
@@ -303,6 +326,81 @@ export default function AdminLogisticsPage() {
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 1.3 HOME PAGE TRUST BADGES (Nationwide Shipping, COD, Exchange...) */}
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-border-light shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-line-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-admin-text-primary-light flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-600" />
+            <span>Home Page Trust Badges</span>
+          </h2>
+          <span className="text-[10px] font-bold text-gray-500 uppercase">Live on Homepage Trust Row</span>
+        </div>
+
+        <p className="text-[11px] text-gray-500">
+          Edit the 4 trust badge titles and subtexts shown in the Homepage Trust Row section (Nationwide Shipping, COD, Exchange, Quality).
+        </p>
+
+        <div className="space-y-3">
+          {(settings.trustBadges || []).map((badge, idx) => (
+            <div key={badge.id} className="p-3 bg-bg-subtle rounded-lg border border-line-200 space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-base leading-none">{badge.icon}</span>
+                <input
+                  type="text"
+                  placeholder="Icon (emoji)"
+                  value={badge.icon}
+                  onChange={(e) => {
+                    const updated = (settings.trustBadges || []).map((b, i) =>
+                      i === idx ? { ...b, icon: e.target.value } : b
+                    );
+                    setSettings({ ...settings, trustBadges: updated });
+                  }}
+                  className="w-16 p-1.5 bg-white border border-line-200 rounded text-center font-mono"
+                />
+                <input
+                  type="text"
+                  placeholder="Badge Title"
+                  value={badge.title}
+                  onChange={(e) => {
+                    const updated = (settings.trustBadges || []).map((b, i) =>
+                      i === idx ? { ...b, title: e.target.value } : b
+                    );
+                    setSettings({ ...settings, trustBadges: updated });
+                  }}
+                  className="flex-1 p-1.5 bg-white border border-line-200 rounded font-bold"
+                />
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={badge.active}
+                    onChange={(e) => {
+                      const updated = (settings.trustBadges || []).map((b, i) =>
+                        i === idx ? { ...b, active: e.target.checked } : b
+                      );
+                      setSettings({ ...settings, trustBadges: updated });
+                    }}
+                    className="accent-admin-accent w-3.5 h-3.5"
+                  />
+                  <span className="text-[10px] uppercase font-bold text-gray-500">Show</span>
+                </label>
+              </div>
+              <input
+                type="text"
+                placeholder="Badge Subtitle / Description"
+                value={badge.subtitle}
+                onChange={(e) => {
+                  const updated = (settings.trustBadges || []).map((b, i) =>
+                    i === idx ? { ...b, subtitle: e.target.value } : b
+                  );
+                  setSettings({ ...settings, trustBadges: updated });
+                }}
+                className="w-full p-1.5 bg-white border border-line-200 rounded text-gray-700"
+              />
+            </div>
+          ))}
         </div>
       </div>
 

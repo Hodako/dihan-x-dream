@@ -167,6 +167,14 @@ export interface DeliveryZone {
   estimatedDays: string;
 }
 
+export interface TrustBadge {
+  id: string;
+  icon: string; // lucide icon name or emoji
+  title: string;
+  subtitle: string;
+  active: boolean;
+}
+
 export interface LogisticsSettings {
   mode: "global" | "area";
   globalInsideDhaka: number;
@@ -184,6 +192,7 @@ export interface LogisticsSettings {
   deliveryNote?: string;
   codNote?: string;
   exchangeGuaranteeNote?: string;
+  trustBadges?: TrustBadge[];
 }
 
 export interface Coupon {
