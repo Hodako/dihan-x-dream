@@ -482,23 +482,19 @@ export default function CheckoutPage() {
         updatedAt: new Date().toISOString(),
       };
 
-      // 1. Cache order locally for instantaneous rendering
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(`order_${orderId}`, JSON.stringify(newOrder));
-        } catch (e) {}
-      }
-
-      // 2. Persist to Firestore
-      try {
-        await setDoc(doc(db, "orders", orderId), newOrder);
-      } catch (err) {
-        console.warn("Firestore offline save fallback:", err);
-      }
-
-      // 3. If online bKash payment selected, route through serverless bKash gateway
+      // --- bKash / Partial Payment: DO NOT save order yet ---
+      // Order will only be created in Firestore after payment gateway confirms success.
       if (paymentMethod === "partial" || paymentMethod === "bkash") {
         const payableAmount = paymentMethod === "partial" ? effectiveDeliveryFee : grandTotal;
+
+        // Store the pending order in sessionStorage ONLY (not Firestore, not localStorage)
+        // It will be committed to Firestore by the /payment/success page upon confirmation.
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("dream_pending_order", JSON.stringify(newOrder));
+          } catch (e) {}
+        }
+
         try {
           const res = await fetch("/api/bkash/checkout", {
             method: "POST",
@@ -532,10 +528,17 @@ export default function CheckoutPage() {
             window.location.href = data.bkashURL;
             return;
           } else {
+            // bKash init failed — clear pending session and show error
+            if (typeof window !== "undefined") {
+              try { sessionStorage.removeItem("dream_pending_order"); } catch (e) {}
+            }
             throw new Error(data.error || "Failed to initialize bKash gateway session.");
           }
         } catch (bkashErr: any) {
           console.warn("bKash gateway session error:", bkashErr);
+          if (typeof window !== "undefined") {
+            try { sessionStorage.removeItem("dream_pending_order"); } catch (e) {}
+          }
           addToast(bkashErr.message || "Failed to open bKash checkout.", "error");
           setIsSubmitting(false);
           setIsRedirecting(false);
@@ -543,7 +546,26 @@ export default function CheckoutPage() {
         }
       }
 
-      // 4. If COD, clear cart and redirect to universal order confirmation receipt
+      // --- COD: Safe to create order immediately (no payment gateway involved) ---
+      // 1. Cache order locally for instantaneous rendering
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(`order_${orderId}`, JSON.stringify(newOrder));
+          // Also add to recent_orders list
+          const recent = JSON.parse(localStorage.getItem("recent_orders") || "[]");
+          recent.unshift(newOrder);
+          localStorage.setItem("recent_orders", JSON.stringify(recent.slice(0, 20)));
+        } catch (e) {}
+      }
+
+      // 2. Persist COD order to Firestore
+      try {
+        await setDoc(doc(db, "orders", orderId), newOrder);
+      } catch (err) {
+        console.warn("Firestore offline save fallback:", err);
+      }
+
+      // 3. Clear cart and redirect to confirmation
       addToast("Your order has been placed successfully!", "success");
       clearCart();
       router.push(`/order-confirmation?orderId=${orderId}`);

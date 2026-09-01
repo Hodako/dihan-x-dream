@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,6 +20,13 @@ function PaymentCancelledContent() {
   const searchParams = useSearchParams();
   const paymentID = searchParams.get("paymentID");
   const invoice = searchParams.get("invoice") || searchParams.get("orderId") || searchParams.get("merchantInvoiceNumber");
+
+  // Clear any pending order session — payment was cancelled, no order should be created
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("dream_pending_order"); } catch (e) {}
+    }
+  }, []);
 
   return (
     <div className="pt-28 sm:pt-36 pb-24 max-w-xl mx-auto px-4 text-center space-y-6">

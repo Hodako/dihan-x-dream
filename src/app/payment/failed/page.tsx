@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,6 +22,13 @@ function PaymentFailedContent() {
   const paymentID = searchParams.get("paymentID");
 
   const isCancelled = status === "cancel" || status === "cancelled";
+
+  // Clear any pending order session — payment did not succeed, so no order should be created
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("dream_pending_order"); } catch (e) {}
+    }
+  }, []);
 
   return (
     <div className="pt-28 sm:pt-36 pb-24 max-w-xl mx-auto px-4 text-center space-y-6">
