@@ -333,6 +333,19 @@ export default function CheckoutPage() {
 
   const grandTotal = Math.max(0, subtotal - discountAmount + effectiveDeliveryFee);
 
+  // Free delivery advance: even with free delivery, admin may require a small advance from product total
+  const freeDeliveryAdvanceAmount = useMemo(() => {
+    if (!isFreeDelivery) return 0;
+    if (!logisticsSettings.freeDeliveryAdvanceEnabled) return 0;
+    const val = logisticsSettings.freeDeliveryAdvanceValue ?? 0;
+    if (logisticsSettings.freeDeliveryAdvanceType === "percent") {
+      return Math.round((grandTotal * val) / 100);
+    }
+    return Math.min(val, grandTotal); // can't charge more than the total
+  }, [isFreeDelivery, logisticsSettings, grandTotal]);
+
+  const hasFreeDeliveryAdvance = isFreeDelivery && (logisticsSettings.freeDeliveryAdvanceEnabled ?? false) && freeDeliveryAdvanceAmount > 0;
+
   const { partialAdvanceAmount, partialDueAmount } = useMemo(() => {
     const splits = computePaymentSplits("partial", grandTotal, logisticsSettings);
     return {
@@ -439,6 +452,29 @@ export default function CheckoutPage() {
       const orderId = `DF-${Date.now()}`;
       const orderNumber = generateOrderNumber();
 
+      // Compute correct advance/remaining based on payment method + free delivery advance
+      const computedAdvancePaid = (() => {
+        if (paymentMethod === "bkash") return grandTotal;
+        if (paymentMethod === "partial") return partialAdvanceAmount;
+        // COD: if free delivery advance is required, that's the advance
+        if (paymentMethod === "cod" && hasFreeDeliveryAdvance) return freeDeliveryAdvanceAmount;
+        return 0;
+      })();
+
+      const computedRemainingDue = (() => {
+        if (paymentMethod === "bkash") return 0;
+        if (paymentMethod === "partial") return partialDueAmount;
+        // COD: remaining = grand total minus any advance
+        return Math.max(0, grandTotal - computedAdvancePaid);
+      })();
+
+      const computedPaymentStatus = (() => {
+        if (paymentMethod === "bkash") return "paid";
+        if (paymentMethod === "partial") return "partial_paid";
+        if (paymentMethod === "cod" && hasFreeDeliveryAdvance) return "partial_paid"; // advance via bKash
+        return "cod_pending";
+      })();
+
       const newOrder: any = {
         id: orderId,
         orderNumber,
@@ -463,19 +499,23 @@ export default function CheckoutPage() {
         deliveryCharge: effectiveDeliveryFee,
         deliveryEstimatedDays: resolvedDelivery.estimatedDays || "2-4 days",
         paymentMethod: paymentMethod,
-        paymentStatus: paymentMethod === "cod" ? "cod_pending" : paymentMethod === "partial" ? "partial_paid" : "paid",
-        advancePaid: paymentMethod === "partial" ? partialAdvanceAmount : paymentMethod === "bkash" ? grandTotal : 0,
-        remainingDue: paymentMethod === "partial" ? partialDueAmount : paymentMethod === "cod" ? grandTotal : 0,
+        paymentStatus: computedPaymentStatus,
+        advancePaid: computedAdvancePaid,
+        remainingDue: computedRemainingDue,
         subtotal,
         discount: discountAmount || 0,
         couponCode: appliedCoupon?.code || null,
         grandTotal,
+        freeDelivery: isFreeDelivery,
+        freeDeliveryAdvance: hasFreeDeliveryAdvance ? freeDeliveryAdvanceAmount : 0,
         status: "pending",
         timeline: [
           {
             status: "pending",
             timestamp: new Date().toISOString(),
-            note: "Order placed by customer via web checkout",
+            note: hasFreeDeliveryAdvance
+              ? `Order placed with free delivery. Advance of ৳${freeDeliveryAdvanceAmount} required via bKash.`
+              : "Order placed by customer via web checkout",
           },
         ],
         createdAt: new Date().toISOString(),
@@ -483,9 +523,16 @@ export default function CheckoutPage() {
       };
 
       // --- bKash / Partial Payment: DO NOT save order yet ---
+      // Also applies when free delivery requires advance (COD + hasFreeDeliveryAdvance)
       // Order will only be created in Firestore after payment gateway confirms success.
-      if (paymentMethod === "partial" || paymentMethod === "bkash") {
-        const payableAmount = paymentMethod === "partial" ? effectiveDeliveryFee : grandTotal;
+      const needsBkashGateway = paymentMethod === "partial" || paymentMethod === "bkash" || (paymentMethod === "cod" && hasFreeDeliveryAdvance);
+
+      if (needsBkashGateway) {
+        const payableAmount = (() => {
+          if (paymentMethod === "partial") return effectiveDeliveryFee || partialAdvanceAmount;
+          if (paymentMethod === "cod" && hasFreeDeliveryAdvance) return freeDeliveryAdvanceAmount;
+          return grandTotal; // bkash full
+        })();
 
         // Store the pending order in sessionStorage ONLY (not Firestore, not localStorage)
         // It will be committed to Firestore by the /payment/success page upon confirmation.
@@ -1173,15 +1220,38 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between text-ink-600">
                   <span>Delivery Charge</span>
-                  <span className="font-semibold text-ink-900 font-sans">
-                    {isFreeDelivery ? "FREE" : formatPrice(effectiveDeliveryFee)}
+                  <span className={`font-semibold font-sans ${isFreeDelivery ? "text-emerald-600" : "text-ink-900"}`}>
+                    {isFreeDelivery ? "FREE 🎉" : formatPrice(effectiveDeliveryFee)}
                   </span>
                 </div>
+
+                {isFreeDelivery && freeThreshold > 0 && (
+                  <div className="text-[10px] text-emerald-700 bg-emerald-50 rounded px-2 py-1 border border-emerald-100">
+                    ✓ You qualify for free delivery (order ≥ {formatPrice(freeThreshold)})
+                  </div>
+                )}
 
                 <div className="pt-2 border-t border-line-200 flex justify-between text-sm font-bold text-ink-900">
                   <span>Grand Total</span>
                   <span className="font-sans text-base text-accent-red">{formatPrice(grandTotal)}</span>
                 </div>
+
+                {/* Free Delivery Advance Breakdown */}
+                {hasFreeDeliveryAdvance && (
+                  <div className="pt-2 border-t border-amber-200 space-y-1.5">
+                    <div className="flex justify-between text-amber-800 font-bold text-xs">
+                      <span>🔔 Advance Required (bKash)</span>
+                      <span className="font-sans">{formatPrice(freeDeliveryAdvanceAmount)}</span>
+                    </div>
+                    <div className="flex justify-between text-ink-600 text-xs">
+                      <span>Pay on Delivery (Remaining)</span>
+                      <span className="font-sans font-semibold text-ink-900">{formatPrice(grandTotal - freeDeliveryAdvanceAmount)}</span>
+                    </div>
+                    <p className="text-[10px] text-amber-700 bg-amber-50 rounded px-2 py-1.5 border border-amber-100 leading-relaxed">
+                      Free delivery applies to your order. A small advance of <strong>{formatPrice(freeDeliveryAdvanceAmount)}</strong> is required via bKash now. The remaining <strong>{formatPrice(grandTotal - freeDeliveryAdvanceAmount)}</strong> will be collected on delivery.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Security PoW Anti-DDoS Verification */}

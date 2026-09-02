@@ -180,6 +180,10 @@ export interface LogisticsSettings {
   globalInsideDhaka: number;
   globalOutsideDhaka: number;
   freeDeliveryThreshold?: number;
+  // When free delivery applies, customer still pays this advance from the product total
+  freeDeliveryAdvanceEnabled?: boolean;
+  freeDeliveryAdvanceType?: "fixed" | "percent"; // fixed amount or % of order total
+  freeDeliveryAdvanceValue?: number;              // e.g. 100 (৳100) or 10 (10%)
   paymentMethods: {
     cod: boolean;
     partial: boolean;

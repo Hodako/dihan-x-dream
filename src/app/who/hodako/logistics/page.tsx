@@ -272,6 +272,88 @@ export default function AdminLogisticsPage() {
         </div>
       </div>
 
+      {/* 1.1 FREE DELIVERY & ADVANCE REQUIREMENT */}
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-emerald-200 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-emerald-100">
+          <Truck className="w-4 h-4 text-emerald-600" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-950">
+            Free Delivery Threshold &amp; Advance Requirement
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label className="block font-bold uppercase text-ink-700 mb-1">
+              Minimum Order for Free Delivery (৳)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={settings.freeDeliveryThreshold ?? 0}
+              onChange={(e) => setSettings({ ...settings, freeDeliveryThreshold: Number(e.target.value) })}
+              className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-mono font-bold"
+              placeholder="e.g. 2000 — set 0 to disable"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Set 0 to disable free delivery.</p>
+          </div>
+        </div>
+
+        {/* Advance Required Even With Free Delivery */}
+        <div className="pt-3 border-t border-emerald-100 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase text-ink-900">Require Advance Even on Free Delivery?</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                If ON, customers who qualify for free delivery must still pay an advance amount (deducted from total).
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.freeDeliveryAdvanceEnabled ?? false}
+                onChange={(e) => setSettings({ ...settings, freeDeliveryAdvanceEnabled: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-5 bg-line-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all" />
+            </label>
+          </div>
+
+          {settings.freeDeliveryAdvanceEnabled && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">Advance Type</label>
+                <select
+                  value={settings.freeDeliveryAdvanceType ?? "fixed"}
+                  onChange={(e) => setSettings({ ...settings, freeDeliveryAdvanceType: e.target.value as "fixed" | "percent" })}
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-bold"
+                >
+                  <option value="fixed">Fixed Amount (৳)</option>
+                  <option value="percent">Percentage of Order (%) </option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold uppercase text-ink-700 mb-1">
+                  {settings.freeDeliveryAdvanceType === "percent" ? "Advance %" : "Advance Amount (৳)"}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={settings.freeDeliveryAdvanceValue ?? 0}
+                  onChange={(e) => setSettings({ ...settings, freeDeliveryAdvanceValue: Number(e.target.value) })}
+                  className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded font-mono font-bold"
+                  placeholder={settings.freeDeliveryAdvanceType === "percent" ? "e.g. 10" : "e.g. 100"}
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {settings.freeDeliveryAdvanceType === "percent"
+                    ? `Customer pays ${settings.freeDeliveryAdvanceValue ?? 0}% of order total upfront.`
+                    : `Customer pays ৳${settings.freeDeliveryAdvanceValue ?? 0} upfront even with free delivery.`}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* 1.2 PRODUCT PAGE TRUST & GUARANTEE BADGES (ADMIN DEFINED) */}
       <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-border-light shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-line-100">
