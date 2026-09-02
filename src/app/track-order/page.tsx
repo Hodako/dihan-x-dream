@@ -210,7 +210,7 @@ function TrackOrderContent() {
     }
   };
 
-  // Accurate Calculations
+  // Accurate Financial Calculations
   const subtotal =
     foundOrder?.subtotal ||
     foundOrder?.items?.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) ||
@@ -219,8 +219,16 @@ function TrackOrderContent() {
   const discount = foundOrder?.discount || 0;
   const grandTotal = foundOrder?.grandTotal || Math.max(0, subtotal - discount + deliveryFee);
 
-  const isFullPaid = foundOrder?.paymentMethod === "bkash" || foundOrder?.paymentStatus === "paid";
-  const advancePaid = isFullPaid ? grandTotal : (foundOrder?.advancePaid || 0);
+  const effectiveAdvancePaid =
+    foundOrder?.advancePaid !== undefined && foundOrder.advancePaid > 0
+      ? foundOrder.advancePaid
+      : (foundOrder as any)?.bkash?.amount || 0;
+
+  const isFullPaid =
+    (foundOrder?.paymentMethod === "bkash" && (foundOrder?.paymentStatus === "paid" || effectiveAdvancePaid >= grandTotal)) ||
+    (effectiveAdvancePaid > 0 && effectiveAdvancePaid >= grandTotal);
+
+  const advancePaid = isFullPaid ? grandTotal : effectiveAdvancePaid;
   const remainingDue = isFullPaid
     ? 0
     : foundOrder?.remainingDue !== undefined
@@ -495,6 +503,13 @@ function TrackOrderContent() {
                   <span>Total Order Value:</span>
                   <span>{formatPrice(grandTotal)}</span>
                 </div>
+
+                {advancePaid > 0 && (
+                  <div className="flex justify-between text-df-success font-semibold pt-1">
+                    <span>Advance Paid (bKash):</span>
+                    <span>-{formatPrice(advancePaid)}</span>
+                  </div>
+                )}
               </div>
 
               {/* Amount Due on Delivery */}
@@ -511,8 +526,8 @@ function TrackOrderContent() {
                   {isFullPaid
                     ? "✓ Full Amount Paid via bKash Online"
                     : advancePaid > 0
-                    ? `৳${advancePaid} Advance Paid · ৳${remainingDue} Due on Delivery`
-                    : "Cash on Delivery (Pay to courier rider)"}
+                    ? `✓ ৳${advancePaid} Advance Paid via bKash · ৳${remainingDue} Due on Delivery`
+                    : "Cash on Delivery (Pay total to courier rider)"}
                 </p>
               </div>
             </div>

@@ -193,27 +193,39 @@ export default function OrderConfirmationClient({ orderId }: OrderConfirmationCl
             <div className="flex justify-between text-ink-600">
               <span>Payment Mode:</span>
               <span className="font-bold text-ink-900 uppercase">
-                {displayOrder.paymentMethod === "cod"
+                {displayOrder.paymentMethod === "cod" && (!displayOrder.advancePaid || displayOrder.advancePaid === 0)
                   ? "Full Cash on Delivery"
-                  : displayOrder.paymentMethod === "partial"
-                  ? "Partial Advance + COD"
-                  : "Online Paid (bKash/Cards)"}
+                  : displayOrder.paymentMethod === "bkash" || (displayOrder.advancePaid && displayOrder.advancePaid >= displayOrder.grandTotal)
+                  ? "Full Online Paid (bKash)"
+                  : "bKash Advance + COD"}
               </span>
             </div>
             <div className="flex justify-between text-ink-600">
-              <span>Paid Upfront:</span>
+              <span>Paid Upfront (bKash):</span>
               <span className="font-bold text-df-success font-mono">
-                {formatPrice(displayOrder.advancePaid)}
+                {formatPrice(
+                  displayOrder.advancePaid !== undefined && displayOrder.advancePaid > 0
+                    ? displayOrder.advancePaid
+                    : (displayOrder as any).bkash?.amount || 0
+                )}
               </span>
             </div>
             <div className="flex justify-between text-ink-600">
               <span>Due to Courier on Delivery:</span>
               <span className="font-bold text-ink-900 font-mono">
-                {formatPrice(displayOrder.remainingDue)}
+                {formatPrice(
+                  displayOrder.remainingDue !== undefined
+                    ? displayOrder.remainingDue
+                    : Math.max(
+                        0,
+                        displayOrder.grandTotal -
+                          (displayOrder.advancePaid || (displayOrder as any).bkash?.amount || 0)
+                      )
+                )}
               </span>
             </div>
             <div className="flex justify-between text-sm font-bold text-ink-900 pt-2 border-t border-line-200">
-              <span>Total Amount:</span>
+              <span>Total Order Amount:</span>
               <span className="font-mono">{formatPrice(displayOrder.grandTotal)}</span>
             </div>
           </div>

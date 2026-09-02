@@ -346,13 +346,25 @@ export default function CheckoutPage() {
 
   const hasFreeDeliveryAdvance = isFreeDelivery && (logisticsSettings.freeDeliveryAdvanceEnabled ?? false) && freeDeliveryAdvanceAmount > 0;
 
+  // Resolved Partial Advance Calculation (exact amount charged as advance)
+  const resolvedPartialAdvanceAmount = useMemo(() => {
+    if (logisticsSettings.partialAdvanceType === "percent") {
+      return Math.round((grandTotal * (logisticsSettings.partialAdvanceValue || 20)) / 100);
+    }
+    if (logisticsSettings.partialAdvanceValue && logisticsSettings.partialAdvanceValue > 0) {
+      return Math.min(logisticsSettings.partialAdvanceValue, grandTotal);
+    }
+    return effectiveDeliveryFee > 0 ? effectiveDeliveryFee : 150;
+  }, [logisticsSettings, grandTotal, effectiveDeliveryFee]);
+
+  const resolvedPartialDueAmount = Math.max(0, grandTotal - resolvedPartialAdvanceAmount);
+
   const { partialAdvanceAmount, partialDueAmount } = useMemo(() => {
-    const splits = computePaymentSplits("partial", grandTotal, logisticsSettings);
     return {
-      partialAdvanceAmount: splits.advancePaid,
-      partialDueAmount: splits.remainingDue,
+      partialAdvanceAmount: resolvedPartialAdvanceAmount,
+      partialDueAmount: resolvedPartialDueAmount,
     };
-  }, [grandTotal, logisticsSettings]);
+  }, [resolvedPartialAdvanceAmount, resolvedPartialDueAmount]);
 
   // Payment methods availability
   const isCodAvailable = logisticsSettings.paymentMethods?.cod !== false;
@@ -529,7 +541,7 @@ export default function CheckoutPage() {
 
       if (needsBkashGateway) {
         const payableAmount = (() => {
-          if (paymentMethod === "partial") return effectiveDeliveryFee || partialAdvanceAmount;
+          if (paymentMethod === "partial") return partialAdvanceAmount;
           if (paymentMethod === "cod" && hasFreeDeliveryAdvance) return freeDeliveryAdvanceAmount;
           return grandTotal; // bkash full
         })();
@@ -1069,15 +1081,15 @@ export default function CheckoutPage() {
                             className="h-6 sm:h-7 w-auto object-contain flex-shrink-0"
                           />
                           <span className="text-xs sm:text-sm font-bold uppercase text-amber-950">
-                            {logisticsSettings.paymentTitles?.partial || "Pay Delivery Charge (Advance)"}
+                            {logisticsSettings.paymentTitles?.partial || "Pay Advance via bKash (Partial COD)"}
                           </span>
                         </div>
                         <span className="text-xs sm:text-sm font-bold text-amber-900 font-sans flex-shrink-0">
-                          {formatPrice(effectiveDeliveryFee)}
+                          {formatPrice(partialAdvanceAmount)}
                         </span>
                       </div>
                       <p className="text-[10px] sm:text-[11px] text-ink-600 mt-0.5">
-                        {logisticsSettings.paymentTitles?.partialSub || `Pay delivery fee now via bKash, remaining ${formatPrice(subtotal - discountAmount)} on delivery.`}
+                        {logisticsSettings.paymentTitles?.partialSub || `Pay advance ${formatPrice(partialAdvanceAmount)} now via bKash, remaining ${formatPrice(partialDueAmount)} on delivery.`}
                       </p>
                     </div>
                   </label>

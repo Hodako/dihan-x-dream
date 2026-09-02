@@ -349,9 +349,17 @@ export default function AdminOrdersPage() {
                     )}
                   </td>
                   <td className="p-4 font-mono">
-                    <span className="text-df-success font-semibold">{formatPrice(ord.advancePaid)}</span>
-                    <span className="text-admin-text-secondary-light"> / </span>
-                    <span className="font-bold text-admin-text-primary-light">{formatPrice(ord.remainingDue)}</span>
+                    {(() => {
+                      const adv = ord.advancePaid !== undefined && ord.advancePaid > 0 ? ord.advancePaid : (ord as any).bkash?.amount || 0;
+                      const due = ord.remainingDue !== undefined ? ord.remainingDue : Math.max(0, ord.grandTotal - adv);
+                      return (
+                        <>
+                          <span className="text-df-success font-semibold">{formatPrice(adv)}</span>
+                          <span className="text-admin-text-secondary-light"> / </span>
+                          <span className="font-bold text-admin-text-primary-light">{formatPrice(due)}</span>
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="p-4 text-right flex items-center justify-end gap-2">
                     <button
@@ -606,12 +614,28 @@ export default function AdminOrdersPage() {
                 <span className="font-mono">{formatPrice(selectedOrder.grandTotal)}</span>
               </div>
               <div className="flex justify-between text-df-success font-semibold pt-1">
-                <span>Advance Paid:</span>
-                <span className="font-mono">{formatPrice(selectedOrder.advancePaid)}</span>
+                <span>Advance Paid (bKash):</span>
+                <span className="font-mono">
+                  {formatPrice(
+                    selectedOrder.advancePaid !== undefined && selectedOrder.advancePaid > 0
+                      ? selectedOrder.advancePaid
+                      : (selectedOrder as any).bkash?.amount || 0
+                  )}
+                </span>
               </div>
               <div className="flex justify-between font-bold text-admin-accent">
                 <span>Remaining Due on Delivery (COD):</span>
-                <span className="font-mono">{formatPrice(selectedOrder.remainingDue)}</span>
+                <span className="font-mono">
+                  {formatPrice(
+                    selectedOrder.remainingDue !== undefined
+                      ? selectedOrder.remainingDue
+                      : Math.max(
+                          0,
+                          selectedOrder.grandTotal -
+                            (selectedOrder.advancePaid || (selectedOrder as any).bkash?.amount || 0)
+                        )
+                  )}
+                </span>
               </div>
             </div>
           </div>

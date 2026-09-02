@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, ArrowRight, ShoppingBag, ShieldCheck, Package } from "lucide-react";
+import { CheckCircle2, ArrowRight, ShoppingBag, ShieldCheck, Package, Banknote } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/store/useCartStore";
 
@@ -16,7 +16,7 @@ function PaymentSuccessContent() {
   const { clearCart } = useCartStore();
 
   const [orderSaved, setOrderSaved] = useState(false);
-  const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
+  const [savedOrder, setSavedOrder] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(true);
 
   useEffect(() => {
@@ -36,24 +36,35 @@ function PaymentSuccessContent() {
 
         const pendingOrder = JSON.parse(pendingRaw);
 
+        // Precise financial calculation
+        const paidAmount = amount ? Number(amount) : (pendingOrder.advancePaid || 0);
+        const isFull = pendingOrder.paymentMethod === "bkash" || paidAmount >= pendingOrder.grandTotal;
+        const actualAdvance = isFull ? pendingOrder.grandTotal : paidAmount;
+        const actualDue = isFull ? 0 : Math.max(0, pendingOrder.grandTotal - actualAdvance);
+        const actualPaymentStatus = isFull ? "paid" : "partial_paid";
+
         // Enrich order with bKash payment confirmation details
         const confirmedOrder = {
           ...pendingOrder,
+          advancePaid: actualAdvance,
+          remainingDue: actualDue,
+          paymentStatus: actualPaymentStatus,
           bkash: {
             paymentID: paymentID || null,
             trxID: trxID || null,
-            amount: amount ? Number(amount) : null,
+            amount: paidAmount,
             invoice: invoice || null,
             confirmedAt: new Date().toISOString(),
           },
-          paymentStatus: "paid",
           updatedAt: new Date().toISOString(),
           timeline: [
             ...(pendingOrder.timeline || []),
             {
               status: "processing",
               timestamp: new Date().toISOString(),
-              note: `bKash payment confirmed. TrxID: ${trxID || "N/A"}`,
+              note: isFull
+                ? `Full bKash payment confirmed (৳${paidAmount}). TrxID: ${trxID || "N/A"}`
+                : `bKash advance payment confirmed (৳${paidAmount}). Remaining ৳${actualDue} due on delivery. TrxID: ${trxID || "N/A"}`,
             },
           ],
         };
@@ -63,7 +74,7 @@ function PaymentSuccessContent() {
         const { db } = await import("@/lib/firebase");
         await setDoc(doc(db, "orders", confirmedOrder.id), confirmedOrder);
 
-        // Cache in localStorage for track-order instant lookup
+        // Cache in localStorage for track-order and admin instant lookup
         localStorage.setItem(`order_${confirmedOrder.id}`, JSON.stringify(confirmedOrder));
         const recent = JSON.parse(localStorage.getItem("recent_orders") || "[]");
         recent.unshift(confirmedOrder);
@@ -72,7 +83,7 @@ function PaymentSuccessContent() {
         // Clean up session
         sessionStorage.removeItem("dream_pending_order");
 
-        setSavedOrderId(confirmedOrder.id);
+        setSavedOrder(confirmedOrder);
         setOrderSaved(true);
       } catch (err) {
         console.error("Failed to commit bKash order to Firestore:", err);
@@ -85,6 +96,9 @@ function PaymentSuccessContent() {
 
     commitPendingOrder();
   }, [clearCart, paymentID, trxID, amount, invoice]);
+
+  const displayPaidAmount = amount ? Number(amount) : (savedOrder?.advancePaid || 0);
+  const isPartial = savedOrder ? (savedOrder.remainingDue > 0 && savedOrder.advancePaid < savedOrder.grandTotal) : false;
 
   return (
     <div className="pt-28 pb-20 max-w-xl mx-auto px-4 text-center space-y-6">
@@ -103,7 +117,9 @@ function PaymentSuccessContent() {
         <p className="text-xs sm:text-sm text-ink-500">
           {isSaving
             ? "Confirming your order, please wait..."
-            : "Your payment has been verified and your order has been placed."}
+            : isPartial
+            ? "Your advance payment has been confirmed and your order is placed!"
+            : "Your payment has been verified and your order is placed!"}
         </p>
       </div>
 
@@ -112,7 +128,7 @@ function PaymentSuccessContent() {
         <div className="flex items-center justify-between pb-3 border-b border-line-100">
           <span className="font-bold text-ink-900 uppercase">Payment Summary</span>
           <span className="px-2.5 py-0.5 rounded bg-pink-50 text-pink-700 font-bold uppercase text-[10px]">
-            bKash Verified
+            {isPartial ? "bKash Advance Verified" : "bKash Verified"}
           </span>
         </div>
 
@@ -123,12 +139,31 @@ function PaymentSuccessContent() {
           </div>
         )}
 
-        {amount && (
+        {displayPaidAmount > 0 && (
           <div className="flex justify-between items-center">
-            <span className="text-ink-500">Amount Paid</span>
+            <span className="text-ink-500">{isPartial ? "Advance Paid Now (bKash)" : "Amount Paid"}</span>
             <span className="font-bold text-df-success font-sans text-sm">
-              {formatPrice(Number(amount))}
+              {formatPrice(displayPaidAmount)}
             </span>
+          </div>
+        )}
+
+        {isPartial && savedOrder && (
+          <div className="flex justify-between items-center bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/60">
+            <div className="flex items-center gap-1.5 text-amber-900">
+              <Banknote className="w-4 h-4 text-amber-700" />
+              <span className="font-bold uppercase text-[11px]">Due on Delivery (COD)</span>
+            </div>
+            <span className="font-mono font-black text-amber-900 text-sm">
+              {formatPrice(savedOrder.remainingDue)}
+            </span>
+          </div>
+        )}
+
+        {savedOrder?.grandTotal && (
+          <div className="flex justify-between items-center">
+            <span className="text-ink-500">Total Order Value</span>
+            <span className="font-mono font-bold text-ink-900">{formatPrice(savedOrder.grandTotal)}</span>
           </div>
         )}
 
@@ -148,10 +183,10 @@ function PaymentSuccessContent() {
           </div>
         )}
 
-        {savedOrderId && (
+        {savedOrder?.orderNumber && (
           <div className="flex justify-between items-center pt-2 border-t border-line-100">
             <span className="text-ink-500 font-bold">Order Number</span>
-            <span className="font-mono font-black text-ink-900">{savedOrderId}</span>
+            <span className="font-mono font-black text-ink-900">{savedOrder.orderNumber}</span>
           </div>
         )}
 
@@ -163,10 +198,10 @@ function PaymentSuccessContent() {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-        {savedOrderId && (
+        {savedOrder?.orderNumber && (
           <Link
-            href={`/track-order?id=${savedOrderId}`}
-            className="w-full sm:w-auto px-8 py-3 bg-[#0E0E0E] hover:bg-black text-white text-xs font-bold uppercase rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+            href={`/track-order?id=${savedOrder.orderNumber}`}
+            className="w-full sm:w-auto px-8 py-3 bg-[#0E0E0E] hover:bg-black text-white text-xs font-bold uppercase rounded-xl flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
           >
             <Package className="w-4 h-4" />
             <span>Track My Order</span>
@@ -174,7 +209,7 @@ function PaymentSuccessContent() {
         )}
         <Link
           href="/shop"
-          className="w-full sm:w-auto px-6 py-3 bg-bg-subtle hover:bg-line-200 text-ink-900 text-xs font-bold uppercase rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-line-200"
+          className="w-full sm:w-auto px-6 py-3 bg-bg-subtle hover:bg-line-200 text-ink-900 text-xs font-bold uppercase rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-line-200 cursor-pointer"
         >
           <ShoppingBag className="w-4 h-4" />
           <span>Continue Shopping</span>
