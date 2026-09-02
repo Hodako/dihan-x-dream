@@ -34,6 +34,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { seedFirestoreDatabase } from "@/lib/seedData";
 import { cn } from "@/lib/utils";
 import SpinIcon from "@/components/icons/SpinIcon";
+import AdminOrderNotifier from "@/components/admin/AdminOrderNotifier";
 
 export default function AdminLayout({
   children,
@@ -339,13 +340,18 @@ export default function AdminLayout({
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Live Order Push Notifications & Audio Chime Controls */}
+            <AdminOrderNotifier />
+
+            <div className="h-6 w-[1px] bg-slate-200 hidden sm:block" />
+
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-admin-accent text-white flex items-center justify-center font-bold text-xs">
+              <div className="w-8 h-8 rounded-full bg-admin-accent text-white flex items-center justify-center font-bold text-xs shadow-xs">
                 {profile?.name?.charAt(0) || "A"}
               </div>
               <div className="text-left hidden sm:block">
-                <span className="font-bold text-xs uppercase block text-admin-text-primary-light">
+                <span className="font-bold text-xs uppercase block text-admin-text-primary-light leading-tight">
                   {profile?.name || "Administrator"}
                 </span>
                 <span className="text-[10px] text-admin-accent font-semibold block uppercase">
@@ -356,7 +362,7 @@ export default function AdminLayout({
 
             <button
               onClick={signOut}
-              className="p-2 text-admin-text-secondary hover:text-admin-danger transition-colors cursor-pointer"
+              className="p-2 text-admin-text-secondary hover:text-admin-danger transition-colors cursor-pointer rounded-lg hover:bg-slate-100"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />

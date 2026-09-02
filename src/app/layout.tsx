@@ -11,6 +11,7 @@ const SpinToWinModal = dynamic(() => import("@/components/storefront/SpinToWinMo
 const CartDrawer = dynamic(() => import("@/components/storefront/CartDrawer"), { ssr: false });
 const SearchModal = dynamic(() => import("@/components/storefront/SearchModal"), { ssr: false });
 const ToastContainer = dynamic(() => import("@/components/common/ToastContainer"), { ssr: false });
+const PWARegister = dynamic(() => import("@/components/pwa/PWARegister"), { ssr: false });
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,6 +53,15 @@ export const metadata: Metadata = {
   authors: [{ name: "Dream Fashion", url: SITE_URL }],
   creator: "Dream Fashion",
   publisher: "Dream Fashion",
+  applicationName: "Dream Fashion",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Dream Fashion",
+  },
+  formatDetection: {
+    telephone: true,
+  },
   robots: {
     index: true,
     follow: true,
@@ -93,11 +103,12 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
     shortcut: "/favicon-32x32.png",
   },
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.json",
   alternates: {
     canonical: SITE_URL,
   },
@@ -159,6 +170,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
+        {/* PWA Meta Tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Dream Fashion" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"
@@ -180,11 +198,12 @@ export default function RootLayout({
           </main>
           <Footer />
 
-          {/* Global Client-Only Drawers, Modals & Spin to Win Widget */}
+          {/* Global Client-Only Drawers, Modals & PWA Widget */}
           <SpinToWinModal />
           <CartDrawer />
           <SearchModal />
           <ToastContainer />
+          <PWARegister />
         </ThemeProvider>
       </body>
     </html>

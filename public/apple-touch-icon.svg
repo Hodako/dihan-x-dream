@@ -1,0 +1,23 @@
+
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="180" height="180" rx="40" fill="#0A0A0A"/>
+  <rect x="7" y="7" width="166" height="166" rx="32" stroke="url(#goldGradient)" stroke-width="4"/>
+  
+  <!-- Crown Icon at Top -->
+  <path d="M68.4 50.400000000000006 L75.6 62.99999999999999 L90 45 L104.39999999999999 62.99999999999999 L111.6 50.400000000000006 L115.2 68.4 L64.8 68.4 Z" fill="url(#goldGradient)"/>
+
+  <!-- DF Monogram Text -->
+  <text x="50%" y="62%" dominant-baseline="middle" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="900" font-size="65" fill="url(#goldGradient)" letter-spacing="4">DF</text>
+  
+  <!-- Subtitle -->
+  <text x="50%" y="78%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="14" fill="#E5A700" letter-spacing="7">DREAM FASHION</text>
+
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="40%" stop-color="#FFB900"/>
+      <stop offset="70%" stop-color="#FF9E00"/>
+      <stop offset="100%" stop-color="#E5A700"/>
+    </linearGradient>
+  </defs>
+</svg>
