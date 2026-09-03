@@ -8,8 +8,7 @@ export function generateStaticParams() {
   }));
 }
 
-const SITE_URL = "https://dreamfashionbd.com";
-const SITE_NAME = "Dream Fashion";
+import { SITE_URL, SITE_NAME } from "@/lib/siteConfig";
 
 export async function generateMetadata({
   params,

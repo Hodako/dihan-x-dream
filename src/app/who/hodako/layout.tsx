@@ -180,7 +180,7 @@ export default function AdminLayout({
                   <input
                     type="email"
                     required
-                    placeholder="admin@dreamfashionbd.com"
+                    placeholder="admin@dreamfashion.zone.id"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-[#FFB900] focus:bg-white"

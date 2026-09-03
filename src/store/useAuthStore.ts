@@ -13,7 +13,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export const SUPER_ADMIN_EMAILS = [
   "azizulhakim886@outlook.com",
-  "admin@dreamfashionbd.com",
+  "admin@dreamfashion.zone.id",
   "admin@croynow.com",
   "hodako17@gmail.com",
 ];

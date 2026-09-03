@@ -71,7 +71,7 @@ export default function OrderConfirmationClient({ orderId }: OrderConfirmationCl
     id: orderId || "order_sample",
     orderNumber: "DF-2026-9481",
     customerName: "Valued Customer",
-    customerEmail: "customer@dreamfashionbd.com",
+    customerEmail: "customer@dreamfashion.zone.id",
     customerPhone: "01700000000",
     items: [],
     shippingAddress: {

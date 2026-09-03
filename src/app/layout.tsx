@@ -19,9 +19,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const SITE_URL = "https://dreamfashionbd.com";
-const SITE_NAME = "Dream Fashion";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
+import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/siteConfig";
 
 export const viewport: Viewport = {
   themeColor: "#0A0A0A",
@@ -96,8 +94,8 @@ export const metadata: Metadata = {
     description:
       "Premium casual shirts, polos, and contemporary tailoring. Nationwide delivery across all 64 districts.",
     images: [DEFAULT_OG_IMAGE],
-    creator: "@dreamfashionbd",
-    site: "@dreamfashionbd",
+    creator: "@dreamfashion",
+    site: "@dreamfashion",
   },
   icons: {
     icon: [
@@ -131,8 +129,8 @@ const organizationJsonLd = {
     addressLocality: "Dhaka",
   },
   sameAs: [
-    "https://www.facebook.com/dreamfashionbd",
-    "https://www.instagram.com/dreamfashionbd",
+    "https://www.facebook.com/dreamfashion.zone",
+    "https://www.instagram.com/dreamfashion.zone",
   ],
   contactPoint: {
     "@type": "ContactPoint",

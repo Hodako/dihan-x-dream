@@ -472,7 +472,7 @@ export default function AdminUsersPage() {
                 <input
                   type="email"
                   required
-                  placeholder="e.g. partner@dreamfashionbd.com"
+                  placeholder="e.g. partner@dreamfashion.zone.id"
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                   className="w-full p-2.5 bg-bg-subtle border border-line-200 rounded-lg font-mono"
