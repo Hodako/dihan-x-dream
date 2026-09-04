@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SlidersHorizontal, X, ChevronDown, Check, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Product } from "@/types";
-import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from "@/lib/seedData";
+import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import ProductCard from "@/components/storefront/ProductCard";
 import { formatPrice, cn } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ function ShopContent() {
   const sortParam = searchParams.get("sort");
   const searchParam = searchParams.get("q") || searchParams.get("search") || "";
 
-  const [productsList, setProductsList] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [productsList, setProductsList] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -35,11 +35,6 @@ function ShopContent() {
       
       let allProds: Product[] = [...localCustom];
       for (const p of cachedCatalog) {
-        if (!allProds.some((item) => item.id === p.id)) {
-          allProds.push(p);
-        }
-      }
-      for (const p of INITIAL_PRODUCTS) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }
@@ -66,7 +61,7 @@ function ShopContent() {
       } catch (e) {}
 
       const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
-      setProductsList(finalProds.length > 0 ? finalProds : INITIAL_PRODUCTS);
+      setProductsList(finalProds);
       if (typeof window !== "undefined") {
         localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
       }

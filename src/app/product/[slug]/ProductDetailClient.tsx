@@ -19,7 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Product, ProductVariant, Review, LogisticsSettings } from "@/types";
-import { INITIAL_PRODUCTS, INITIAL_LOGISTICS_SETTINGS } from "@/lib/seedData";
+import { INITIAL_LOGISTICS_SETTINGS } from "@/lib/seedData";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useUIStore } from "@/store/useUIStore";
@@ -57,7 +57,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
     setProductData(null);
     setLoading(true);
 
-    // 1. Instant check in local storage & seed catalog
+    // 1. Instant check in local storage
     if (typeof window !== "undefined") {
       const storedLogistics = localStorage.getItem("dream_logistics_settings");
       if (storedLogistics) {
@@ -78,19 +78,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
         if (foundCached) {
           setProductData(foundCached);
           setLoading(false);
-        } else {
-          const foundInitial = matchProduct(INITIAL_PRODUCTS, slug);
-          if (foundInitial) {
-            setProductData(foundInitial);
-            setLoading(false);
-          }
         }
-      }
-    } else {
-      const foundInitial = matchProduct(INITIAL_PRODUCTS, slug);
-      if (foundInitial) {
-        setProductData(foundInitial);
-        setLoading(false);
       }
     }
 
@@ -157,12 +145,10 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
           }
         }
 
-        const fallbackSeed = matchProduct(INITIAL_PRODUCTS, slug);
-        setProductData(fallbackSeed);
+        setProductData(null);
       } catch (e) {
         console.error("Firestore product load error:", e);
-        const fallbackSeed = matchProduct(INITIAL_PRODUCTS, slug);
-        setProductData(fallbackSeed);
+        setProductData(null);
       } finally {
         setLoading(false);
       }

@@ -26,7 +26,6 @@ import { db } from "@/lib/firebase";
 import { uploadToImgbb, convertFileToAvif } from "@/lib/imgbb";
 import SpinIcon from "@/components/icons/SpinIcon";
 import {
-  INITIAL_PRODUCTS,
   INITIAL_CATEGORIES,
   INITIAL_BANNERS,
   INITIAL_LOOKBOOK,
@@ -198,15 +197,13 @@ export default function AdminSettingsPage() {
     try {
       localStorage.removeItem("dream_deleted_products");
       localStorage.removeItem("dream_custom_products");
+      localStorage.removeItem("dream_catalog_cache");
       const snap = await getDocs(collection(db, "products"));
       for (const d of snap.docs) {
         await deleteDoc(doc(db, "products", d.id));
       }
-      for (const p of INITIAL_PRODUCTS) {
-        await setDoc(doc(db, "products", p.id), p);
-      }
       setResetCatalogConfirm("");
-      addToast("Catalog reset with default high-quality apparel items.", "success");
+      addToast("Catalog cleared and ready for new custom products.", "success");
     } catch (e: any) {
       addToast(e.message || "Error resetting catalog", "error");
     } finally {

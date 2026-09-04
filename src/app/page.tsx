@@ -19,7 +19,7 @@ import {
   Product,
   HomeSection,
 } from "@/types";
-import { INITIAL_HOME_SECTIONS, INITIAL_PRODUCTS } from "@/lib/seedData";
+import { INITIAL_HOME_SECTIONS } from "@/lib/seedData";
 import HeroCarousel from "@/components/storefront/home/HeroCarousel";
 import TrendingStrip from "@/components/storefront/home/TrendingStrip";
 import ProductRail from "@/components/storefront/home/ProductRail";
@@ -83,11 +83,6 @@ export default function HomePage() {
 
       let initialList: Product[] = [...localCustom];
       for (const p of cachedCatalog) {
-        if (!initialList.some((item) => item.id === p.id)) {
-          initialList.push(p);
-        }
-      }
-      for (const p of INITIAL_PRODUCTS) {
         if (!initialList.some((item) => item.id === p.id)) {
           initialList.push(p);
         }

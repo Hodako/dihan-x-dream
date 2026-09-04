@@ -20,7 +20,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Product, ProductVariant, Category } from "@/types";
-import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from "@/lib/seedData";
+import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import { uploadToImgbb } from "@/lib/imgbb";
 import { formatPrice, slugify } from "@/lib/utils";
 import { useUIStore } from "@/store/useUIStore";
@@ -30,7 +30,7 @@ import { sanitizeForFirestore } from "@/lib/firestoreUtils";
 
 export default function AdminProductsPage() {
   const { addToast } = useUIStore();
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -106,11 +106,6 @@ export default function AdminProductsPage() {
       const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
       
       let allLoaded: Product[] = [...localCustom];
-      for (const p of INITIAL_PRODUCTS) {
-        if (!allLoaded.some((item) => item.id === p.id)) {
-          allLoaded.push(p);
-        }
-      }
 
       try {
         const snap = await getDocs(collection(db, "products"));
@@ -329,12 +324,6 @@ export default function AdminProductsPage() {
       setProducts([]);
       addToast("All products cleared. You can now add clean new items!", "info");
     }
-  };
-
-  const handleResetCatalog = () => {
-    localStorage.removeItem("dream_deleted_products");
-    setProducts(INITIAL_PRODUCTS);
-    addToast("Catalog reset with default high-quality apparel items.", "success");
   };
 
   const [currentPage, setCurrentPage] = useState(1);

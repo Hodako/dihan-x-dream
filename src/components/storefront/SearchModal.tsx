@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Search, X, ArrowRight } from "lucide-react";
 import { useUIStore } from "@/store/useUIStore";
 import { Product } from "@/types";
-import { INITIAL_PRODUCTS } from "@/lib/seedData";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import ProductCard from "./ProductCard";
 import Link from "next/link";
 
@@ -13,7 +14,40 @@ export default function SearchModal() {
   const router = useRouter();
   const { isSearchOpen, closeSearch } = useUIStore();
   const [query, setQuery] = useState("");
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [results, setResults] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      let localCustom: Product[] = [];
+      let deletedIds: string[] = [];
+      let cachedCatalog: Product[] = [];
+      if (typeof window !== "undefined") {
+        deletedIds = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
+        localCustom = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
+        cachedCatalog = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
+      }
+      let prods: Product[] = [...localCustom];
+      for (const p of cachedCatalog) {
+        if (!prods.some((item) => item.id === p.id)) {
+          prods.push(p);
+        }
+      }
+      setAllProducts(prods.filter((p) => !deletedIds.includes(p.id)));
+
+      try {
+        const snap = await getDocs(collection(db, "products"));
+        if (!snap.empty) {
+          const list: Product[] = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Product));
+          setAllProducts(list.filter((p) => !deletedIds.includes(p.id)));
+        }
+      } catch (e) {}
+    }
+    if (isSearchOpen) {
+      loadProducts();
+    }
+  }, [isSearchOpen]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -22,15 +56,15 @@ export default function SearchModal() {
     }
 
     const q = query.toLowerCase();
-    const filtered = INITIAL_PRODUCTS.filter(
+    const filtered = allProducts.filter(
       (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.tags.some((t) => t.toLowerCase().includes(q))
+        (p.title && p.title.toLowerCase().includes(q)) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.tags && p.tags.some((t) => t.toLowerCase().includes(q)))
     );
     setResults(filtered);
-  }, [query]);
+  }, [query, allProducts]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
