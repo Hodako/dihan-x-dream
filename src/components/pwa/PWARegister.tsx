@@ -47,25 +47,31 @@ export default function PWARegister() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-
-      // Check if user previously dismissed banner in last 24h
-      const dismissed = localStorage.getItem("dream_pwa_banner_dismissed");
-      if (!dismissed || Date.now() - Number(dismissed) > 86400000) {
-        setShowInstallBanner(true);
-      }
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // 5. Detect app installed event
-    window.addEventListener("appinstalled", () => {
+    // 5. Show PWA install option after a few moments (3.5 seconds) if not standalone
+    const timer = setTimeout(() => {
+      const dismissed = localStorage.getItem("dream_pwa_banner_dismissed");
+      if (!dismissed || Date.now() - Number(dismissed) > 86400000) {
+        setShowInstallBanner(true);
+      }
+    }, 3500);
+
+    // 6. Detect app installed event
+    const handleAppInstalled = () => {
       setIsInstalled(true);
       setShowInstallBanner(false);
       setDeferredPrompt(null);
-    });
+    };
+
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 

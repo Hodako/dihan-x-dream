@@ -81,6 +81,8 @@ export default function Footer() {
   const [footer, setFooter] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
   const [clubPhone, setClubPhone] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscribedCoupon, setSubscribedCoupon] = useState<string | null>(null);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
 
   useEffect(() => {
     async function loadFooter() {
@@ -110,12 +112,58 @@ export default function Footer() {
     loadFooter();
   }, []);
 
-  const handleNewsletter = (e: React.FormEvent) => {
+  const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clubPhone.trim()) return;
+    const clean = clubPhone.replace(/\D/g, "");
+    if (clean.length < 11 && !clubPhone.includes("@")) {
+      addToast("Please enter a valid 11-digit mobile number (017XXXXXXXX) or email", "error");
+      return;
+    }
+
+    const discountCode = "DREAM10";
+    setSubscribedCoupon(discountCode);
     setIsSubscribed(true);
-    addToast("🎉 Welcome to Dream Club! Your 10% coupon code is DREAM10", "success");
+
+    if (typeof window !== "undefined") {
+      try {
+        const subs = JSON.parse(localStorage.getItem("dream_subscribers") || "[]");
+        subs.push({ contact: clubPhone, coupon: discountCode, date: new Date().toISOString() });
+        localStorage.setItem("dream_subscribers", JSON.stringify(subs));
+        
+        // Auto-apply 10% discount to checkout
+        localStorage.setItem(
+          "dream_applied_coupon",
+          JSON.stringify({
+            id: `club_${discountCode}`,
+            code: discountCode,
+            type: "percent",
+            value: 10,
+            active: true,
+          })
+        );
+      } catch (e) {}
+    }
+
+    try {
+      const { setDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      await setDoc(doc(db, "subscribers", `sub_${Date.now()}`), {
+        contact: clubPhone,
+        coupon: discountCode,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (e) {}
+
+    addToast("🎉 Welcome to Dream Club! 10% Discount Coupon DREAM10 activated!", "success");
     setClubPhone("");
+  };
+
+  const handleCopyNewsletterCoupon = () => {
+    if (!subscribedCoupon) return;
+    navigator.clipboard.writeText(subscribedCoupon);
+    setCopiedCoupon(true);
+    addToast(`Coupon "${subscribedCoupon}" copied to clipboard!`, "success");
+    setTimeout(() => setCopiedCoupon(false), 2000);
   };
 
   return (
@@ -269,23 +317,52 @@ export default function Footer() {
                 "Subscribe to receive exclusive drop alerts, private lookbooks, and 10% off your first online order."}
             </p>
 
-            <form onSubmit={handleNewsletter} className="flex items-center gap-2">
-              <input
-                type="tel"
-                required
-                placeholder="017XX-XXXXXX"
-                value={clubPhone}
-                onChange={(e) => setClubPhone(e.target.value)}
-                className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent-gold font-mono"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-accent-gold hover:bg-amber-400 text-ink-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 hover:scale-105"
-              >
-                <span>Join</span>
-                <Send className="w-3 h-3" />
-              </button>
-            </form>
+            {subscribedCoupon ? (
+              <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl p-3 space-y-2 text-center animate-fade-in">
+                <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+                  <span>10% Welcome Coupon Activated!</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={subscribedCoupon}
+                    className="w-full text-center font-mono font-black text-xs tracking-widest bg-black/60 border border-amber-400/40 rounded-lg py-1.5 text-amber-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyNewsletterCoupon}
+                    className="px-3 py-1.5 bg-[#FFB900] hover:bg-amber-400 text-black rounded-lg text-[10px] font-black uppercase tracking-wider transition-transform active:scale-95 cursor-pointer shrink-0"
+                  >
+                    {copiedCoupon ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <Link
+                  href="/shop"
+                  className="block text-[11px] font-bold text-amber-400 hover:text-white uppercase tracking-wider underline pt-1"
+                >
+                  Shop now with 10% discount →
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletter} className="flex items-center gap-2">
+                <input
+                  type="tel"
+                  required
+                  placeholder="017XX-XXXXXX"
+                  value={clubPhone}
+                  onChange={(e) => setClubPhone(e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent-gold font-mono"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-accent-gold hover:bg-amber-400 text-ink-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 hover:scale-105"
+                >
+                  <span>Join</span>
+                  <Send className="w-3 h-3" />
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

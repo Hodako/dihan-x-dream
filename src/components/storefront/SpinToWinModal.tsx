@@ -186,6 +186,16 @@ export default function SpinToWinModal() {
         setActiveReward(rewardSession);
         if (typeof window !== "undefined") {
           localStorage.setItem("dream_spin_session", JSON.stringify(rewardSession));
+          localStorage.setItem(
+            "dream_applied_coupon",
+            JSON.stringify({
+              id: `spin_${generatedCode}`,
+              code: generatedCode,
+              type: winningSlice.discountType || "percent",
+              value: winningSlice.discountValue || 10,
+              active: true,
+            })
+          );
         }
         addToast(`🎉 Congratulations! You won ${winningSlice.discountText}!`, "success");
       }
@@ -380,12 +390,22 @@ export default function SpinToWinModal() {
                   </button>
                 </div>
 
+                <div className="flex items-center gap-2 pt-1">
+                  <a
+                    href="/checkout"
+                    onClick={() => setIsOpen(false)}
+                    className="flex-1 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black rounded-xl text-xs font-black uppercase tracking-wider text-center transition-all shadow-sm active:scale-95"
+                  >
+                    Apply & Checkout Now →
+                  </a>
+                </div>
+
                 {remainingSpins > 0 && (
                   <button
                     type="button"
                     onClick={handleSpin}
                     disabled={isSpinning}
-                    className="text-[11px] text-gray-500 hover:text-black uppercase font-bold tracking-wider underline cursor-pointer"
+                    className="text-[11px] text-gray-500 hover:text-black uppercase font-bold tracking-wider underline cursor-pointer pt-1"
                   >
                     Try another spin ({remainingSpins} left)
                   </button>

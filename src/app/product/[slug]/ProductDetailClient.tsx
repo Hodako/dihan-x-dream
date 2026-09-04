@@ -57,7 +57,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
     setProductData(null);
     setLoading(true);
 
-    // 1. Instant check in local storage
+    // 1. Instant check in local storage & seed catalog
     if (typeof window !== "undefined") {
       const storedLogistics = localStorage.getItem("dream_logistics_settings");
       if (storedLogistics) {
@@ -78,7 +78,19 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
         if (foundCached) {
           setProductData(foundCached);
           setLoading(false);
+        } else {
+          const foundInitial = matchProduct(INITIAL_PRODUCTS, slug);
+          if (foundInitial) {
+            setProductData(foundInitial);
+            setLoading(false);
+          }
         }
+      }
+    } else {
+      const foundInitial = matchProduct(INITIAL_PRODUCTS, slug);
+      if (foundInitial) {
+        setProductData(foundInitial);
+        setLoading(false);
       }
     }
 
@@ -145,9 +157,12 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
           }
         }
 
-        setProductData(null);
+        const fallbackSeed = matchProduct(INITIAL_PRODUCTS, slug);
+        setProductData(fallbackSeed);
       } catch (e) {
         console.error("Firestore product load error:", e);
+        const fallbackSeed = matchProduct(INITIAL_PRODUCTS, slug);
+        setProductData(fallbackSeed);
       } finally {
         setLoading(false);
       }

@@ -25,6 +25,8 @@ export default function AdminSpinnerPage() {
   const [enabled, setEnabled] = useState(true);
   const [maxSpinsPerUser, setMaxSpinsPerUser] = useState(3);
   const [maxDiscountCap, setMaxDiscountCap] = useState(1000);
+  const [voucherValidityMinutes, setVoucherValidityMinutes] = useState(10);
+  const [minOrderSpend, setMinOrderSpend] = useState(0);
   const [title, setTitle] = useState("SPIN & WIN DISCOUNT");
   const [subtitle, setSubtitle] = useState("Spin the wheel to unlock your exclusive 10-minute discount!");
   const [slices, setSlices] = useState<SpinnerSlice[]>(INITIAL_ADMIN_SLICES);
@@ -54,6 +56,8 @@ export default function AdminSpinnerPage() {
             if (data.enabled !== undefined) setEnabled(data.enabled);
             if (data.maxSpinsPerUser) setMaxSpinsPerUser(data.maxSpinsPerUser);
             if (data.maxDiscountCap) setMaxDiscountCap(data.maxDiscountCap);
+            if (data.voucherValidityMinutes) setVoucherValidityMinutes(data.voucherValidityMinutes);
+            if (data.minOrderSpend !== undefined) setMinOrderSpend(data.minOrderSpend);
             if (data.title) setTitle(data.title);
             if (data.subtitle) setSubtitle(data.subtitle);
             if (data.slices && data.slices.length > 0) setSlices(data.slices);
@@ -68,6 +72,8 @@ export default function AdminSpinnerPage() {
           if (data.enabled !== undefined) setEnabled(data.enabled);
           if (data.maxSpinsPerUser) setMaxSpinsPerUser(data.maxSpinsPerUser);
           if (data.maxDiscountCap) setMaxDiscountCap(data.maxDiscountCap);
+          if (data.voucherValidityMinutes) setVoucherValidityMinutes(data.voucherValidityMinutes);
+          if (data.minOrderSpend !== undefined) setMinOrderSpend(data.minOrderSpend);
           if (data.title) setTitle(data.title);
           if (data.subtitle) setSubtitle(data.subtitle);
           if (data.slices && data.slices.length > 0) setSlices(data.slices);
@@ -165,6 +171,8 @@ export default function AdminSpinnerPage() {
       enabled,
       maxSpinsPerUser: Number(maxSpinsPerUser),
       maxDiscountCap: Number(maxDiscountCap),
+      voucherValidityMinutes: Number(voucherValidityMinutes),
+      minOrderSpend: Number(minOrderSpend),
       title,
       subtitle,
       slices,
@@ -188,12 +196,16 @@ export default function AdminSpinnerPage() {
     setSlices(INITIAL_ADMIN_SLICES);
     setMaxSpinsPerUser(3);
     setMaxDiscountCap(1000);
+    setVoucherValidityMinutes(10);
+    setMinOrderSpend(0);
     setEnabled(true);
     try {
       localStorage.setItem("dream_spinner_settings", JSON.stringify({
         enabled: true,
         maxSpinsPerUser: 3,
         maxDiscountCap: 1000,
+        voucherValidityMinutes: 10,
+        minOrderSpend: 0,
         slices: INITIAL_ADMIN_SLICES,
       }));
     } catch (e) {}
@@ -219,24 +231,33 @@ export default function AdminSpinnerPage() {
             type="button"
             onClick={handleSaveAllSettings}
             disabled={isSaving}
-            className="px-5 py-2.5 bg-[#FFB900] hover:bg-[#E5A700] text-black text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
+            className="px-5 py-2.5 bg-admin-accent hover:bg-admin-accent-hover text-white text-xs font-bold uppercase rounded flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? "Saving..." : "Save & Sync Spinner"}</span>
+            <span>{isSaving ? "Saving..." : "Save & Sync Live"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleResetDefaults}
+            className="px-4 py-2.5 bg-bg-subtle hover:bg-line-200 text-admin-text-primary-light text-xs font-bold uppercase rounded transition-colors cursor-pointer"
+          >
+            Reset Defaults
           </button>
         </div>
       </div>
 
-      {/* General Settings */}
-      <div className="bg-white rounded-lg border border-admin-border-light shadow-xs p-6 space-y-5">
-        <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-admin-text-primary-light pb-2 border-b border-line-200">
-          Global Spinner Rules & Quotas
+      {/* Global Rules */}
+      <div className="bg-white rounded-lg border border-admin-border-light shadow-xs p-6 space-y-6">
+        <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-admin-text-primary-light pb-3 border-b border-line-200">
+          Global Spinner & Voucher Rules
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="flex items-center justify-between p-3.5 bg-bg-subtle rounded-lg border border-line-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-3.5 bg-bg-subtle rounded-lg border border-line-200 flex items-center justify-between">
             <div>
-              <p className="font-bold text-admin-text-primary-light uppercase">Enable Lucky Wheel</p>
+              <label className="block font-bold uppercase text-admin-text-primary-light">
+                Spinner Active Status
+              </label>
               <p className="text-[11px] text-admin-text-secondary-light">Shows floating widget on storefront</p>
             </div>
             <input
@@ -251,7 +272,7 @@ export default function AdminSpinnerPage() {
             <label className="block font-bold uppercase text-admin-text-primary-light">
               Max Spins Per User
             </label>
-            <p className="text-[11px] text-admin-text-secondary-light">Limit each customer per day (Default 3)</p>
+            <p className="text-[11px] text-admin-text-secondary-light">Limit each customer per day</p>
             <input
               type="number"
               min={1}
@@ -266,11 +287,39 @@ export default function AdminSpinnerPage() {
             <label className="block font-bold uppercase text-admin-text-primary-light">
               Max Voucher Cap (৳)
             </label>
-            <p className="text-[11px] text-admin-text-secondary-light">Upper ceiling on discount amount</p>
+            <p className="text-[11px] text-admin-text-secondary-light">Upper ceiling on percentage discounts</p>
             <input
               type="number"
               value={maxDiscountCap}
               onChange={(e) => setMaxDiscountCap(Number(e.target.value))}
+              className="w-full p-2 bg-white border border-line-200 rounded font-bold text-admin-text-primary-light"
+            />
+          </div>
+
+          <div className="p-3.5 bg-bg-subtle rounded-lg border border-line-200 space-y-1">
+            <label className="block font-bold uppercase text-admin-text-primary-light">
+              Voucher Validity (Minutes)
+            </label>
+            <p className="text-[11px] text-admin-text-secondary-light">e.g. 10 mins (default), 60 mins, or 1440 (24h)</p>
+            <input
+              type="number"
+              min={1}
+              value={voucherValidityMinutes}
+              onChange={(e) => setVoucherValidityMinutes(Number(e.target.value))}
+              className="w-full p-2 bg-white border border-line-200 rounded font-bold text-admin-text-primary-light"
+            />
+          </div>
+
+          <div className="p-3.5 bg-bg-subtle rounded-lg border border-line-200 space-y-1">
+            <label className="block font-bold uppercase text-admin-text-primary-light">
+              Min Order Spend (৳)
+            </label>
+            <p className="text-[11px] text-admin-text-secondary-light">Minimum cart value to use won voucher (0 for none)</p>
+            <input
+              type="number"
+              min={0}
+              value={minOrderSpend}
+              onChange={(e) => setMinOrderSpend(Number(e.target.value))}
               className="w-full p-2 bg-white border border-line-200 rounded font-bold text-admin-text-primary-light"
             />
           </div>

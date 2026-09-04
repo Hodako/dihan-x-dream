@@ -30,7 +30,7 @@ const ITEMS_PER_PAGE = 12;
 
 export default function CategoryClient({ slug }: CategoryClientProps) {
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [loading, setLoading] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "discount">("newest");
   const [priceFilter, setPriceFilter] = useState<"all" | "under-1500" | "sale" | "in-stock">("all");
@@ -60,6 +60,11 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
 
       let allProds: Product[] = [...localCustom];
       for (const p of cachedCatalog) {
+        if (!allProds.some((item) => item.id === p.id)) {
+          allProds.push(p);
+        }
+      }
+      for (const p of INITIAL_PRODUCTS) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }

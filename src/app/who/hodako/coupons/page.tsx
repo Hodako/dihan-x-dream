@@ -23,13 +23,29 @@ export default function AdminCouponsPage() {
   const [minOrder, setMinOrder] = useState(1500);
   const [usageLimit, setUsageLimit] = useState(500);
 
-  // Load from Firestore
+  // Load from Firestore & LocalStorage
   useEffect(() => {
     async function loadCoupons() {
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("dream_coupons");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setCoupons(parsed);
+            }
+          }
+        } catch (e) {}
+      }
+
       try {
         const snap = await getDoc(doc(db, "settings", "coupons"));
         if (snap.exists() && snap.data().coupons) {
-          setCoupons(snap.data().coupons);
+          const remote = snap.data().coupons as Coupon[];
+          setCoupons(remote);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("dream_coupons", JSON.stringify(remote));
+          }
         }
       } catch (e) {}
     }
@@ -52,11 +68,15 @@ export default function AdminCouponsPage() {
       active: true,
     };
 
-    const updated = [...coupons, newCoupon];
+    const updated = [...coupons.filter((c) => c.code.toUpperCase() !== newCoupon.code), newCoupon];
     setCoupons(updated);
     setIsAdding(false);
     setCode("");
-    addToast(`Coupon "${newCoupon.code}" created!`, "success");
+    addToast(`Coupon "${newCoupon.code}" saved & activated!`, "success");
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dream_coupons", JSON.stringify(updated));
+    }
 
     try {
       await setDoc(doc(db, "settings", "coupons"), { coupons: updated });
@@ -68,6 +88,10 @@ export default function AdminCouponsPage() {
     setCoupons(updated);
     addToast("Coupon removed", "info");
 
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dream_coupons", JSON.stringify(updated));
+    }
+
     try {
       await setDoc(doc(db, "settings", "coupons"), { coupons: updated });
     } catch (e) {}
@@ -76,6 +100,10 @@ export default function AdminCouponsPage() {
   const handleToggleActive = async (id: string) => {
     const updated = coupons.map((c) => (c.id === id ? { ...c, active: !c.active } : c));
     setCoupons(updated);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dream_coupons", JSON.stringify(updated));
+    }
 
     try {
       await setDoc(doc(db, "settings", "coupons"), { coupons: updated });

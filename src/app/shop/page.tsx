@@ -18,7 +18,7 @@ function ShopContent() {
   const sortParam = searchParams.get("sort");
   const searchParam = searchParams.get("q") || searchParams.get("search") || "";
 
-  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [productsList, setProductsList] = useState<Product[]>(INITIAL_PRODUCTS);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -35,6 +35,11 @@ function ShopContent() {
       
       let allProds: Product[] = [...localCustom];
       for (const p of cachedCatalog) {
+        if (!allProds.some((item) => item.id === p.id)) {
+          allProds.push(p);
+        }
+      }
+      for (const p of INITIAL_PRODUCTS) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }
@@ -61,7 +66,7 @@ function ShopContent() {
       } catch (e) {}
 
       const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
-      setProductsList(finalProds);
+      setProductsList(finalProds.length > 0 ? finalProds : INITIAL_PRODUCTS);
       if (typeof window !== "undefined") {
         localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
       }
@@ -118,14 +123,20 @@ function ShopContent() {
   const filteredProducts = useMemo(() => {
     return productsList.filter((product) => {
       // Category filter
-      if (selectedCategory !== "all") {
-        if (selectedCategory === "casual-shirts" && !product.tags.includes("shirt") && product.category !== "casual-shirts") {
-          return false;
-        } else if (selectedCategory === "polos" && !product.tags.includes("polo") && product.category !== "polos") {
-          return false;
-        } else if (selectedCategory !== "casual-shirts" && selectedCategory !== "polos" && product.category !== selectedCategory) {
-          return false;
-        }
+      if (selectedCategory && selectedCategory !== "all") {
+        const catClean = selectedCategory.toLowerCase().trim();
+        const matchesCategory =
+          product.category?.toLowerCase() === catClean ||
+          product.category?.toLowerCase().replace(/\s+/g, "-") === catClean ||
+          (catClean === "casual-shirts" && (product.tags?.includes("shirt") || product.category === "casual-shirts")) ||
+          (catClean === "polos" && (product.tags?.includes("polo") || product.category === "polos")) ||
+          (catClean === "men" && (product.category === "men" || product.tags?.includes("men"))) ||
+          (catClean === "women" && (product.category === "women" || product.tags?.includes("women"))) ||
+          (catClean === "dresses" && (product.category === "dresses" || product.tags?.includes("dresses"))) ||
+          (catClean === "outerwear" && (product.category === "outerwear" || product.tags?.includes("outerwear"))) ||
+          product.tags?.some((t) => t.toLowerCase() === catClean);
+
+        if (!matchesCategory) return false;
       }
 
       // Quick filter tabs (e.g. sale, trending)

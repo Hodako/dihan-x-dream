@@ -54,6 +54,8 @@ export interface Product {
   status?: "published" | "draft" | "archived";
   variants: ProductVariant[];
   fabricAndCare?: string;
+  rating?: number;
+  reviewCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -204,10 +206,10 @@ export interface Coupon {
   code: string;
   type: "fixed" | "percent";
   value: number;
-  minOrder: number;
-  expiresAt: string;
-  usageLimit: number;
-  usedCount: number;
+  minOrder?: number;
+  expiresAt?: string;
+  usageLimit?: number;
+  usedCount?: number;
   active: boolean;
 }
 
@@ -262,12 +264,15 @@ export interface SpinnerSlice {
   isTryAgain?: boolean;
   quota?: number;
   wonCount?: number;
+  minOrder?: number;
 }
 
 export interface SpinnerSettings {
   enabled: boolean;
   maxSpinsPerUser: number;
   maxDiscountCap: number;
+  voucherValidityMinutes?: number;
+  minOrderSpend?: number;
   title: string;
   subtitle: string;
   slices: SpinnerSlice[];

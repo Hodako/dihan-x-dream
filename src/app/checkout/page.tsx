@@ -192,6 +192,31 @@ export default function CheckoutPage() {
         }
       }
     }
+
+    // Auto-recover applied coupon from spinner, footer, or previous selection
+    try {
+      const activeApplied = localStorage.getItem("dream_applied_coupon");
+      if (activeApplied) {
+        const parsed = JSON.parse(activeApplied);
+        if (parsed.code) {
+          setAppliedCoupon(parsed);
+        }
+      } else {
+        const spinSession = localStorage.getItem("dream_spin_session");
+        if (spinSession) {
+          const parsed = JSON.parse(spinSession);
+          if (parsed.expiresAt > Date.now() && parsed.slice && parsed.code) {
+            setAppliedCoupon({
+              id: `spin_${parsed.code}`,
+              code: parsed.code,
+              type: parsed.slice.discountType || "percent",
+              value: parsed.slice.discountValue || 10,
+              active: true,
+            });
+          }
+        }
+      }
+    } catch (e) {}
   }, []);
 
   // Sync with auth user info if available
@@ -435,22 +460,91 @@ export default function CheckoutPage() {
     setIsApplyingCoupon(true);
     setCouponError("");
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const code = couponCodeInput.trim().toUpperCase();
-      const matched = INITIAL_COUPONS.find(
-        (c) => c.code === code && c.active && (!c.minOrder || subtotal >= c.minOrder)
+
+      // 1. Check Initial Seed Coupons
+      let matched: Coupon | undefined = INITIAL_COUPONS.find(
+        (c) => c.code.toUpperCase() === code && c.active && (!c.minOrder || subtotal >= c.minOrder)
       );
+
+      // 2. Check Custom Admin Coupons from LocalStorage
+      if (!matched && typeof window !== "undefined") {
+        try {
+          const storedCoupons = JSON.parse(localStorage.getItem("dream_coupons") || "[]");
+          if (Array.isArray(storedCoupons)) {
+            matched = storedCoupons.find(
+              (c: Coupon) => c.code?.toUpperCase() === code && c.active && (!c.minOrder || subtotal >= c.minOrder)
+            );
+          }
+        } catch (e) {}
+      }
+
+      // 3. Check Custom Admin Coupons from Firestore
+      if (!matched) {
+        try {
+          const snap = await getDoc(doc(db, "settings", "coupons"));
+          if (snap.exists() && Array.isArray(snap.data().coupons)) {
+            const remoteCoupons = snap.data().coupons as Coupon[];
+            matched = remoteCoupons.find(
+              (c) => c.code?.toUpperCase() === code && c.active && (!c.minOrder || subtotal >= c.minOrder)
+            );
+          }
+        } catch (e) {}
+      }
+
+      // 4. Check Active Spin Session from LocalStorage
+      if (!matched && typeof window !== "undefined") {
+        try {
+          const spinRaw = localStorage.getItem("dream_spin_session");
+          if (spinRaw) {
+            const parsed = JSON.parse(spinRaw);
+            if (parsed.code?.toUpperCase() === code && parsed.expiresAt > Date.now()) {
+              matched = {
+                id: `spin_${parsed.code}`,
+                code: parsed.code,
+                type: parsed.slice?.discountType || "percent",
+                value: parsed.slice?.discountValue || 10,
+                active: true,
+              };
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 5. Check Dynamic Spinner Code Patterns (e.g. DF-10-*, DF-15-*, DF-20-*, DF-200-*, DF-FREE-*)
+      if (!matched) {
+        if (code.startsWith("DF-10") || code.startsWith("SPIN-10") || code.startsWith("SPIN10")) {
+          matched = { id: `dyn_${code}`, code, type: "percent", value: 10, active: true };
+        } else if (code.startsWith("DF-15") || code.startsWith("SPIN-15") || code.startsWith("SPIN15")) {
+          matched = { id: `dyn_${code}`, code, type: "percent", value: 15, active: true };
+        } else if (code.startsWith("DF-20") || code.startsWith("SPIN-20") || code.startsWith("SPIN20")) {
+          matched = { id: `dyn_${code}`, code, type: "percent", value: 20, active: true };
+        } else if (code.startsWith("DF-200") || code.startsWith("SPIN-200") || code.startsWith("SPIN200")) {
+          matched = { id: `dyn_${code}`, code, type: "fixed", value: 200, active: true };
+        } else if (code.startsWith("DF-FREE") || code.startsWith("FREE")) {
+          matched = { id: `dyn_${code}`, code, type: "fixed", value: 150, active: true };
+        } else if (code === "DREAM10" || code === "CLUB10" || code === "WELCOME10") {
+          matched = { id: `club_${code}`, code, type: "percent", value: 10, active: true };
+        }
+      }
 
       if (matched) {
         setAppliedCoupon(matched);
         setCouponCodeInput("");
-        addToast(`Coupon "${matched.code}" applied successfully!`, "success");
+        if (typeof window !== "undefined") {
+          localStorage.setItem("dream_applied_coupon", JSON.stringify(matched));
+        }
+        addToast(
+          `Coupon "${matched.code}" applied! (${matched.type === "percent" ? `${matched.value}% OFF` : `৳${matched.value} OFF`})`,
+          "success"
+        );
       } else {
         setCouponError("Invalid or expired coupon code");
         addToast("Invalid or expired coupon code", "error");
       }
       setIsApplyingCoupon(false);
-    }, 400);
+    }, 250);
   };
 
   // Order Placement
