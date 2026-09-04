@@ -33,6 +33,7 @@ import {
 import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { HomeSection, HomeSectionType, Category, Product } from "@/types";
+import { filterValidProducts, cleanLocalProductCaches } from "@/lib/utils";
 import { INITIAL_HOME_SECTIONS, INITIAL_CATEGORIES } from "@/lib/seedData";
 import { useUIStore } from "@/store/useUIStore";
 import { cn, formatPrice } from "@/lib/utils";
@@ -150,8 +151,8 @@ export default function SectionsManagerPage() {
         const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
         const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
         const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
-        let initialProds = [...localCustom];
-        for (const p of cachedCatalog) {
+        let initialProds = filterValidProducts([...localCustom]);
+        for (const p of filterValidProducts(cachedCatalog)) {
           if (!initialProds.some((item) => item.id === p.id)) {
             initialProds.push(p);
           }
@@ -180,13 +181,13 @@ export default function SectionsManagerPage() {
         }
 
         if (!prodSnap.empty) {
-          const loadedProds = prodSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+          const loadedProds = filterValidProducts(prodSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Product)));
           setProducts((prev) => {
             let merged = [...loadedProds];
             for (const p of prev) {
               if (!merged.some((m) => m.id === p.id)) merged.push(p);
             }
-            return merged;
+            return filterValidProducts(merged);
           });
         }
       } catch (err) {

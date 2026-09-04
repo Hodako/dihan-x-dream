@@ -174,10 +174,14 @@ export default function AdminSettingsPage() {
     try {
       const snap = await getDocs(collection(db, "products"));
       for (const d of snap.docs) {
-        await deleteDoc(doc(db, "products", d.id));
+        await deleteDoc(d.ref).catch(() => {});
       }
       localStorage.removeItem("dream_deleted_products");
       localStorage.removeItem("dream_custom_products");
+      localStorage.removeItem("dream_catalog_cache");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("dream_products_changed"));
+      }
       setPurgeProductsConfirm("");
       addToast("All products database has been cleared.", "info");
     } catch (err: any) {
@@ -200,7 +204,10 @@ export default function AdminSettingsPage() {
       localStorage.removeItem("dream_catalog_cache");
       const snap = await getDocs(collection(db, "products"));
       for (const d of snap.docs) {
-        await deleteDoc(doc(db, "products", d.id));
+        await deleteDoc(d.ref).catch(() => {});
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("dream_products_changed"));
       }
       setResetCatalogConfirm("");
       addToast("Catalog cleared and ready for new custom products.", "success");

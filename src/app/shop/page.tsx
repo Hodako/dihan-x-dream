@@ -4,10 +4,10 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SlidersHorizontal, X, ChevronDown, Check, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { Product } from "@/types";
+import { Product, Category } from "@/types";
 import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import ProductCard from "@/components/storefront/ProductCard";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatPrice, cn, filterValidProducts, cleanLocalProductCaches } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -19,6 +19,7 @@ function ShopContent() {
   const searchParam = searchParams.get("q") || searchParams.get("search") || "";
 
   const [productsList, setProductsList] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>(INITIAL_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -28,13 +29,46 @@ function ShopContent() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    cleanLocalProductCaches();
+
+    async function loadAllCategories() {
+      if (typeof window !== "undefined") {
+        const storedCats = localStorage.getItem("dream_categories_settings");
+        if (storedCats) {
+          try {
+            const parsed = JSON.parse(storedCats);
+            if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+              setCategoriesList(parsed.categories);
+            }
+          } catch (e) {}
+        }
+      }
+      try {
+        const { doc, getDoc } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        const catSnap = await getDoc(doc(db, "settings", "categories"));
+        if (catSnap.exists() && Array.isArray(catSnap.data().categories)) {
+          setCategoriesList(catSnap.data().categories);
+        }
+      } catch (e) {}
+    }
+
     async function loadFirestoreProducts() {
-      const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
-      const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
-      const cachedCatalog: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]") : [];
-      
-      let allProds: Product[] = [...localCustom];
-      for (const p of cachedCatalog) {
+      const deletedIds: string[] =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]")
+          : [];
+      const localCustom: Product[] =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]")
+          : [];
+      const cachedCatalog: Product[] =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]")
+          : [];
+
+      let allProds: Product[] = filterValidProducts([...localCustom]);
+      for (const p of filterValidProducts(cachedCatalog)) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }
@@ -44,9 +78,9 @@ function ShopContent() {
       }
 
       try {
-        const { collection, getDocs, query, limit } = await import("firebase/firestore");
+        const { collection, getDocs } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
-        const snap = await getDocs(query(collection(db, "products"), limit(50)));
+        const snap = await getDocs(collection(db, "products"));
         if (!snap.empty) {
           snap.forEach((doc) => {
             const data = { id: doc.id, ...doc.data() } as Product;
@@ -60,38 +94,57 @@ function ShopContent() {
         }
       } catch (e) {}
 
-      const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
+      const validCleaned = filterValidProducts(allProds);
+      const finalProds = validCleaned.filter((p) => !deletedIds.includes(p.id));
       setProductsList(finalProds);
       if (typeof window !== "undefined") {
         localStorage.setItem("dream_catalog_cache", JSON.stringify(finalProds));
       }
     }
+
+    loadAllCategories();
     loadFirestoreProducts();
+
+    const handleProductsChanged = () => loadFirestoreProducts();
+    window.addEventListener("dream_products_changed", handleProductsChanged);
+    window.addEventListener("storage", handleProductsChanged);
+
+    return () => {
+      window.removeEventListener("dream_products_changed", handleProductsChanged);
+      window.removeEventListener("storage", handleProductsChanged);
+    };
   }, []);
 
   useEffect(() => {
-    if (categoryParam) setSelectedCategory(categoryParam);
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    } else {
+      setSelectedCategory("all");
+    }
     if (sortParam) setSortBy(sortParam);
   }, [categoryParam, sortParam]);
 
-  const quickPills = [
-    { id: "all", label: "All Items" },
-    { id: "casual-shirts", label: "Casual Shirts" },
-    { id: "polos", label: "Polos" },
-    { id: "men", label: "Men" },
-    { id: "women", label: "Women" },
-    { id: "dresses", label: "Dresses" },
-    { id: "outerwear", label: "Outerwear" },
-  ];
+  const quickPills = useMemo(() => {
+    const defaultPill = { id: "all", label: "All Products" };
+    const dynamicPills = categoriesList.map((c) => ({
+      id: c.slug,
+      label: c.name,
+    }));
+    return [defaultPill, ...dynamicPills];
+  }, [categoriesList]);
 
-  const availableSizes = ["XS", "S", "M", "L", "XL", "30", "32"];
+  const availableSizes = ["XS", "S", "M", "L", "XL", "XXL", "30", "32", "34", "36"];
   const availableColors = [
     { name: "Black", hex: "#111111" },
     { name: "White", hex: "#F2EFE9" },
+    { name: "Blue", hex: "#1E3A8A" },
+    { name: "Navy", hex: "#0F172A" },
     { name: "Beige", hex: "#D8CDBF" },
     { name: "Tan", hex: "#8B5A2B" },
     { name: "Gold", hex: "#D4AF37" },
     { name: "Grey", hex: "#8E9398" },
+    { name: "Green", hex: "#0D5C3A" },
+    { name: "Red", hex: "#DC2626" },
   ];
 
   const toggleSize = (size: string) => {
@@ -116,68 +169,86 @@ function ShopContent() {
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    return productsList.filter((product) => {
-      // Category filter
-      if (selectedCategory && selectedCategory !== "all") {
-        const catClean = selectedCategory.toLowerCase().trim();
-        const matchesCategory =
-          product.category?.toLowerCase() === catClean ||
-          product.category?.toLowerCase().replace(/\s+/g, "-") === catClean ||
-          (catClean === "casual-shirts" && (product.tags?.includes("shirt") || product.category === "casual-shirts")) ||
-          (catClean === "polos" && (product.tags?.includes("polo") || product.category === "polos")) ||
-          (catClean === "men" && (product.category === "men" || product.tags?.includes("men"))) ||
-          (catClean === "women" && (product.category === "women" || product.tags?.includes("women"))) ||
-          (catClean === "dresses" && (product.category === "dresses" || product.tags?.includes("dresses"))) ||
-          (catClean === "outerwear" && (product.category === "outerwear" || product.tags?.includes("outerwear"))) ||
-          product.tags?.some((t) => t.toLowerCase() === catClean);
+    return productsList
+      .filter((product) => {
+        // Category filter
+        if (
+          selectedCategory &&
+          selectedCategory !== "all" &&
+          selectedCategory !== "shop" &&
+          selectedCategory !== "all-items"
+        ) {
+          const catClean = selectedCategory.toLowerCase().trim();
+          const pCat = (product.category || "").toLowerCase().trim();
+          const pCatSlug = pCat.replace(/\s+/g, "-");
+          const matchesCategory =
+            pCat === catClean ||
+            pCatSlug === catClean ||
+            product.tags?.some(
+              (t) =>
+                t.toLowerCase().trim() === catClean ||
+                t.toLowerCase().trim().replace(/\s+/g, "-") === catClean
+            );
 
-        if (!matchesCategory) return false;
-      }
+          if (!matchesCategory) return false;
+        }
 
-      // Quick filter tabs (e.g. sale, trending)
-      if (filterParam === "sale" && !product.salePrice) return false;
-      if (filterParam === "trending" && !product.isTrending) return false;
+        // Quick filter tabs (e.g. sale, trending)
+        if (filterParam === "sale" && !product.salePrice) return false;
+        if (filterParam === "trending" && !product.isTrending) return false;
 
-      // Search query filter
-      if (searchParam) {
-        const q = searchParam.toLowerCase();
-        const matches =
-          product.title.toLowerCase().includes(q) ||
-          product.description.toLowerCase().includes(q) ||
-          product.category.toLowerCase().includes(q) ||
-          product.tags.some((t) => t.toLowerCase().includes(q));
-        if (!matches) return false;
-      }
+        // Search query filter
+        if (searchParam) {
+          const q = searchParam.toLowerCase();
+          const matches =
+            product.title?.toLowerCase().includes(q) ||
+            product.description?.toLowerCase().includes(q) ||
+            product.category?.toLowerCase().includes(q) ||
+            product.tags?.some((t) => t.toLowerCase().includes(q));
+          if (!matches) return false;
+        }
 
-      // Price filter
-      const effectivePrice = product.salePrice || product.basePrice;
-      if (effectivePrice > priceRange) return false;
+        // Price filter
+        const effectivePrice = product.salePrice || product.basePrice || 0;
+        if (priceRange < 10000 && effectivePrice > priceRange) return false;
 
-      // Size filter
-      if (selectedSizes.length > 0) {
-        const hasSize = product.variants.some((v) => selectedSizes.includes(v.size));
-        if (!hasSize) return false;
-      }
+        // Size filter
+        if (selectedSizes.length > 0) {
+          const hasSize = product.variants?.some((v) => selectedSizes.includes(v.size));
+          if (!hasSize) return false;
+        }
 
-      // Color filter
-      if (selectedColors.length > 0) {
-        const hasColor = product.variants.some((v) =>
-          selectedColors.some((c) => v.color.toLowerCase().includes(c.toLowerCase()))
-        );
-        if (!hasColor) return false;
-      }
+        // Color filter
+        if (selectedColors.length > 0) {
+          const hasColor = product.variants?.some((v) =>
+            selectedColors.some((c) =>
+              (v.color || "").toLowerCase().includes(c.toLowerCase())
+            )
+          );
+          if (!hasColor) return false;
+        }
 
-      return true;
-    }).sort((a, b) => {
-      const priceA = a.salePrice || a.basePrice;
-      const priceB = b.salePrice || b.basePrice;
+        return true;
+      })
+      .sort((a, b) => {
+        const priceA = a.salePrice || a.basePrice || 0;
+        const priceB = b.salePrice || b.basePrice || 0;
 
-      if (sortBy === "price_asc") return priceA - priceB;
-      if (sortBy === "price_desc") return priceB - priceA;
-      if (sortBy === "popular") return (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0);
-      return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
-    });
-  }, [selectedCategory, selectedSizes, selectedColors, priceRange, sortBy, filterParam, searchParam]);
+        if (sortBy === "price_asc") return priceA - priceB;
+        if (sortBy === "price_desc") return priceB - priceA;
+        if (sortBy === "popular") return (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0);
+        return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
+      });
+  }, [
+    productsList,
+    selectedCategory,
+    selectedSizes,
+    selectedColors,
+    priceRange,
+    sortBy,
+    filterParam,
+    searchParam,
+  ]);
 
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) +

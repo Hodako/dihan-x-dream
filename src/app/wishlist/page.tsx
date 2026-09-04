@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Heart, ArrowRight, ShoppingBag } from "lucide-react";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { Product } from "@/types";
+import { filterValidProducts } from "@/lib/utils";
 import ProductCard from "@/components/storefront/ProductCard";
 
 export default function WishlistPage() {
@@ -15,8 +16,8 @@ export default function WishlistPage() {
     if (typeof window !== "undefined") {
       const localCustom: Product[] = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
       const cachedCatalog: Product[] = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
-      let all: Product[] = [...localCustom];
-      for (const p of cachedCatalog) {
+      let all: Product[] = filterValidProducts([...localCustom]);
+      for (const p of filterValidProducts(cachedCatalog)) {
         if (!all.some((item) => item.id === p.id)) all.push(p);
       }
       setCatalog(all);
@@ -24,12 +25,12 @@ export default function WishlistPage() {
 
     async function loadFirestore() {
       try {
-        const { collection, getDocs, limit, query } = await import("firebase/firestore");
+        const { collection, getDocs } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
-        const snap = await getDocs(query(collection(db, "products"), limit(50)));
+        const snap = await getDocs(collection(db, "products"));
         if (!snap.empty) {
           const prods = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
-          setCatalog(prods);
+          setCatalog(filterValidProducts(prods));
         }
       } catch (e) {}
     }

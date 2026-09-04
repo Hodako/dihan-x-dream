@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { CartItem } from '@/types';
+import { isJunkOrSeedProduct } from '@/lib/utils';
 
 interface CartState {
   items: CartItem[];
@@ -22,7 +23,11 @@ const loadInitialCart = (): CartItem[] => {
   if (typeof window === "undefined") return [];
   try {
     const saved = localStorage.getItem(CART_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => item && !isJunkOrSeedProduct(item.productId))
+      : [];
   } catch {
     return [];
   }

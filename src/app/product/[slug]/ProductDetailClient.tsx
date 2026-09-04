@@ -23,7 +23,7 @@ import { INITIAL_LOGISTICS_SETTINGS } from "@/lib/seedData";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useUIStore } from "@/store/useUIStore";
-import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
+import { formatPrice, calculateDiscount, cn, isJunkOrSeedProduct, cleanLocalProductCaches } from "@/lib/utils";
 import ProductRail from "@/components/storefront/home/ProductRail";
 
 interface ProductDetailClientProps {
@@ -36,11 +36,15 @@ function matchProduct(list: Product[], rawSlug: string): Product | null {
   const decoded = decodeURIComponent(rawSlug).toLowerCase().trim();
 
   // 1. Exact ID match (Highest Priority)
-  const byId = list.find((p) => p.id === raw || p.id === decoded || (p.id && p.id.toLowerCase().trim() === decoded));
+  const byId = list.find(
+    (p) => !isJunkOrSeedProduct(p) && (p.id === raw || p.id === decoded || (p.id && p.id.toLowerCase().trim() === decoded))
+  );
   if (byId) return byId;
 
   // 2. Exact Slug match
-  const bySlug = list.find((p) => p.slug && (p.slug === raw || p.slug.toLowerCase().trim() === decoded));
+  const bySlug = list.find(
+    (p) => !isJunkOrSeedProduct(p) && p.slug && (p.slug === raw || p.slug.toLowerCase().trim() === decoded)
+  );
   if (bySlug) return bySlug;
 
   return null;

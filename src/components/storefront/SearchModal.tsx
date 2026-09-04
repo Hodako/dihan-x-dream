@@ -7,6 +7,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { Product } from "@/types";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { filterValidProducts } from "@/lib/utils";
 import ProductCard from "./ProductCard";
 import Link from "next/link";
 
@@ -27,8 +28,8 @@ export default function SearchModal() {
         localCustom = JSON.parse(localStorage.getItem("dream_custom_products") || "[]");
         cachedCatalog = JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]");
       }
-      let prods: Product[] = [...localCustom];
-      for (const p of cachedCatalog) {
+      let prods: Product[] = filterValidProducts([...localCustom]);
+      for (const p of filterValidProducts(cachedCatalog)) {
         if (!prods.some((item) => item.id === p.id)) {
           prods.push(p);
         }
@@ -40,7 +41,8 @@ export default function SearchModal() {
         if (!snap.empty) {
           const list: Product[] = [];
           snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Product));
-          setAllProducts(list.filter((p) => !deletedIds.includes(p.id)));
+          const valid = filterValidProducts(list);
+          setAllProducts(valid.filter((p) => !deletedIds.includes(p.id)));
         }
       } catch (e) {}
     }

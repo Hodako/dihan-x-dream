@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { isJunkOrSeedProduct } from '@/lib/utils';
 
 interface WishlistState {
   productIds: string[];
@@ -13,7 +14,11 @@ const loadInitialWishlist = (): string[] => {
   if (typeof window === "undefined") return [];
   try {
     const saved = localStorage.getItem(WISHLIST_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed)
+      ? parsed.filter((id) => id && !isJunkOrSeedProduct(id))
+      : [];
   } catch {
     return [];
   }

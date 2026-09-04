@@ -19,8 +19,9 @@ import {
 import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import ProductCard from "@/components/storefront/ProductCard";
 import { Product, Category } from "@/types";
-import { collection, getDocs, doc, getDoc, query, limit } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { filterValidProducts, cleanLocalProductCaches } from "@/lib/utils";
 
 interface CategoryClientProps {
   slug: string;
@@ -38,6 +39,8 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    cleanLocalProductCaches();
+
     async function loadData() {
       // 1. Instant Cache from LocalStorage
       let localCustom: Product[] = [];
@@ -58,8 +61,8 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
         }
       }
 
-      let allProds: Product[] = [...localCustom];
-      for (const p of cachedCatalog) {
+      let allProds: Product[] = filterValidProducts([...localCustom]);
+      for (const p of filterValidProducts(cachedCatalog)) {
         if (!allProds.some((item) => item.id === p.id)) {
           allProds.push(p);
         }
@@ -74,7 +77,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
           setCategories(catSnap.data().categories);
         }
 
-        const prodSnap = await getDocs(query(collection(db, "products"), limit(50)));
+        const prodSnap = await getDocs(collection(db, "products"));
         if (!prodSnap.empty) {
           prodSnap.forEach((d) => {
             const data = { id: d.id, ...d.data() } as Product;
@@ -87,7 +90,8 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
           });
         }
       } catch (e) {} finally {
-        const finalProds = allProds.filter((p) => !deletedIds.includes(p.id));
+        const validProds = filterValidProducts(allProds);
+        const finalProds = validProds.filter((p) => !deletedIds.includes(p.id));
         setAllProducts(finalProds);
         setLoading(false);
         if (typeof window !== "undefined") {
@@ -96,6 +100,15 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
       }
     }
     loadData();
+
+    const handleProductsChanged = () => loadData();
+    window.addEventListener("dream_products_changed", handleProductsChanged);
+    window.addEventListener("storage", handleProductsChanged);
+
+    return () => {
+      window.removeEventListener("dream_products_changed", handleProductsChanged);
+      window.removeEventListener("storage", handleProductsChanged);
+    };
   }, []);
 
   useEffect(() => {

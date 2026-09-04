@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 import { SITE_URL, SITE_NAME } from "@/lib/siteConfig";
+import { isJunkOrSeedProduct } from "@/lib/utils";
 
 export async function generateMetadata({
   params,
@@ -20,7 +21,8 @@ export async function generateMetadata({
     try {
       const docSnap = await getDoc(doc(db, "products", params.slug));
       if (docSnap.exists()) {
-        productData = { id: docSnap.id, ...docSnap.data() };
+        const d = { id: docSnap.id, ...docSnap.data() };
+        if (!isJunkOrSeedProduct(d)) productData = d;
       }
     } catch (e) {}
 
@@ -30,8 +32,8 @@ export async function generateMetadata({
         const q = query(collection(db, "products"), where("slug", "==", params.slug));
         const snap = await getDocs(q);
         if (!snap.empty) {
-          const d = snap.docs[0];
-          productData = { id: d.id, ...d.data() };
+          const d = { id: snap.docs[0].id, ...snap.docs[0].data() };
+          if (!isJunkOrSeedProduct(d)) productData = d;
         }
       } catch (e) {}
     }

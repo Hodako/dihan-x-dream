@@ -20,6 +20,7 @@ import {
   HomeSection,
 } from "@/types";
 import { INITIAL_HOME_SECTIONS } from "@/lib/seedData";
+import { filterValidProducts, cleanLocalProductCaches } from "@/lib/utils";
 import HeroCarousel from "@/components/storefront/home/HeroCarousel";
 import TrendingStrip from "@/components/storefront/home/TrendingStrip";
 import ProductRail from "@/components/storefront/home/ProductRail";
@@ -37,6 +38,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    cleanLocalProductCaches();
+
     const syncLocalSections = () => {
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem("dream_home_sections");
@@ -81,8 +84,8 @@ export default function HomePage() {
           ? JSON.parse(localStorage.getItem("dream_catalog_cache") || "[]")
           : [];
 
-      let initialList: Product[] = [...localCustom];
-      for (const p of cachedCatalog) {
+      let initialList: Product[] = filterValidProducts([...localCustom]);
+      for (const p of filterValidProducts(cachedCatalog)) {
         if (!initialList.some((item) => item.id === p.id)) {
           initialList.push(p);
         }
@@ -149,7 +152,7 @@ export default function HomePage() {
         // Fetch Firestore Products
         let allProds: Product[] = [...initialList];
         try {
-          const prodSnap = await getDocs(query(collection(db, "products"), limit(50)));
+          const prodSnap = await getDocs(collection(db, "products"));
           if (!prodSnap.empty) {
             prodSnap.forEach((docSnap) => {
               const data = { id: docSnap.id, ...docSnap.data() } as Product;
@@ -163,9 +166,10 @@ export default function HomePage() {
           }
         } catch (e) {}
 
-        const finalCatalog = allProds.filter((p) => !deletedIds.includes(p.id));
+        const validCatalog = filterValidProducts(allProds);
+        const finalCatalog = validCatalog.filter((p) => !deletedIds.includes(p.id));
         setProducts(finalCatalog);
-        if (typeof window !== "undefined" && finalCatalog.length > 0) {
+        if (typeof window !== "undefined") {
           localStorage.setItem("dream_catalog_cache", JSON.stringify(finalCatalog));
         }
       } catch (err) {
@@ -176,9 +180,13 @@ export default function HomePage() {
 
     loadData();
 
+    const handleProductsChanged = () => loadData();
+    window.addEventListener("dream_products_changed", handleProductsChanged);
+
     return () => {
       window.removeEventListener("storage", syncLocalSections);
       window.removeEventListener("dream_sections_changed", syncLocalSections);
+      window.removeEventListener("dream_products_changed", handleProductsChanged);
       unsubSections();
     };
   }, []);

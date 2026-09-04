@@ -22,7 +22,7 @@ import {
 import { Product, ProductVariant, Category } from "@/types";
 import { INITIAL_CATEGORIES } from "@/lib/seedData";
 import { uploadToImgbb } from "@/lib/imgbb";
-import { formatPrice, slugify } from "@/lib/utils";
+import { formatPrice, slugify, filterValidProducts, isJunkOrSeedProduct, cleanLocalProductCaches } from "@/lib/utils";
 import { useUIStore } from "@/store/useUIStore";
 import { doc, getDoc, getDocs, collection, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -71,6 +71,8 @@ export default function AdminProductsPage() {
 
   // Load from Firestore and LocalStorage
   useEffect(() => {
+    cleanLocalProductCaches();
+
     async function loadData() {
       // 1. Categories
       if (typeof window !== "undefined") {
@@ -105,12 +107,21 @@ export default function AdminProductsPage() {
       const deletedIds: string[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_deleted_products") || "[]") : [];
       const localCustom: Product[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("dream_custom_products") || "[]") : [];
       
-      let allLoaded: Product[] = [...localCustom];
+      let allLoaded: Product[] = filterValidProducts([...localCustom]);
 
       try {
         const snap = await getDocs(collection(db, "products"));
         if (!snap.empty) {
-          const firestoreProds = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+          const firestoreProds: Product[] = [];
+          for (const d of snap.docs) {
+            const data = { id: d.id, ...d.data() } as Product;
+            if (isJunkOrSeedProduct(data)) {
+              deleteDoc(d.ref).catch(() => {});
+            } else {
+              firestoreProds.push(data);
+            }
+          }
+
           for (const fp of firestoreProds) {
             const idx = allLoaded.findIndex((p) => p.id === fp.id);
             if (idx >= 0) {
@@ -124,8 +135,13 @@ export default function AdminProductsPage() {
         console.warn("Firestore product read fallback to local storage:", e);
       }
 
-      const activeList = allLoaded.filter((p) => !deletedIds.includes(p.id));
+      const validList = filterValidProducts(allLoaded);
+      const activeList = validList.filter((p) => !deletedIds.includes(p.id));
       setProducts(activeList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("dream_catalog_cache", JSON.stringify(activeList));
+        localStorage.setItem("dream_custom_products", JSON.stringify(activeList));
+      }
     }
     loadData();
   }, []);
@@ -279,15 +295,22 @@ export default function AdminProductsPage() {
     // 1. Always persist to localStorage for instant client rendering
     try {
       localStorage.setItem("dream_custom_products", JSON.stringify(updatedList));
+      localStorage.setItem("dream_catalog_cache", JSON.stringify(updatedList));
       const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
       const filteredDeleted = deletedIds.filter((id) => id !== prodId);
       localStorage.setItem("dream_deleted_products", JSON.stringify(filteredDeleted));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("dream_products_changed"));
+      }
     } catch (e) {}
 
     // 2. Persist sanitized document to Firestore
     try {
       const sanitized = sanitizeForFirestore(newProduct);
       await setDoc(doc(db, "products", prodId), sanitized);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("dream_products_changed"));
+      }
     } catch (err: any) {
       console.warn("Firestore setDoc warning (saved locally):", err);
     }
@@ -298,9 +321,13 @@ export default function AdminProductsPage() {
     setProducts(updated);
     try {
       localStorage.setItem("dream_custom_products", JSON.stringify(updated));
+      localStorage.setItem("dream_catalog_cache", JSON.stringify(updated));
       const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
       if (!deletedIds.includes(id)) {
         localStorage.setItem("dream_deleted_products", JSON.stringify([...deletedIds, id]));
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("dream_products_changed"));
       }
     } catch {}
 
@@ -308,21 +335,27 @@ export default function AdminProductsPage() {
 
     try {
       await deleteDoc(doc(db, "products", id));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("dream_products_changed"));
+      }
     } catch (e) {}
   };
 
   const handlePurgeAllJunk = async () => {
     if (confirm("Are you sure you want to delete ALL products to start completely fresh?")) {
-      const allIds = products.map((p) => p.id);
       try {
-        const deletedIds: string[] = JSON.parse(localStorage.getItem("dream_deleted_products") || "[]");
-        localStorage.setItem("dream_deleted_products", JSON.stringify(Array.from(new Set([...deletedIds, ...allIds]))));
-        for (const id of allIds) {
-          await deleteDoc(doc(db, "products", id));
+        localStorage.removeItem("dream_custom_products");
+        localStorage.removeItem("dream_catalog_cache");
+        const snap = await getDocs(collection(db, "products"));
+        for (const d of snap.docs) {
+          await deleteDoc(d.ref).catch(() => {});
+        }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("dream_products_changed"));
         }
       } catch {}
       setProducts([]);
-      addToast("All products cleared. You can now add clean new items!", "info");
+      addToast("All products cleared from store & database!", "info");
     }
   };
 
